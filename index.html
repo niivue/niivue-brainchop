@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="stylesheet" href="niivue.css" />
+  <title>Niivue brain chop</title>
+</head>
+
+<body>
+  <header>
+    <label for="opacitySlider">Opacity</label>
+    <input type="range" min="0" max="255" value="128" class="slider" id="opacitySlider" />
+    &nbsp;
+    <label for="modelSelect">Segmentation Model</label>
+    <select id="modelSelect">
+    </select>
+    &nbsp;
+    <button id="saveBtn">Save Overlay</button>
+    &nbsp;
+    <button id="aboutBtn">About</button>
+
+  </header>
+  <main id="canvas-container">
+    <canvas id="gl1"></canvas>
+  </main>
+  <footer>
+    <div class="footer">
+      <table class="footer">
+        <tr>
+          <th id="location">Ready</th>
+          <th><progress id="modelProgress" value="0" max="100"> 32% </progress></th>
+          <th>
+            <!-- important to use class footer here -->
+            <div class="footer" id="memstatus" style="color: green">Memory OK</div>
+          </th>
+        </tr>
+      </table>
+    </div>
+  </footer>
+  <script type="module" src="/main.js"></script>
+</body>
+
+</html>
