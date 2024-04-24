@@ -1,9 +1,9 @@
 import { mat3, mat4, vec3, vec4 } from 'gl-matrix'
 import * as tf from '@tensorflow/tfjs'
-export { chop, inferenceModelsList }
+export { runInference, inferenceModelsList, brainChopOpts }
 import {bwlabeler} from './bwlabels.js'
 
-var gOpts = {
+var brainChopOpts = {
   // General  settings for input shape  [batchSize, batch_D, batch_H, batch_W, numOfChan]
   batchSize:                            1, //How many batches are used during each inference iteration
   numOfChan:                            1, // num of channel of the input shape
@@ -28,7 +28,7 @@ var inferenceModelsList = [
        id: 1,
        type: "Segmentation",
        path: "./models/model5_gw_ae/model.json",
-       modelName: "+\u26A1 Tissue GWM (light)",
+       modelName: "\u26A1 Tissue GWM (light)",
        labelsPath: "./models/model5_gw_ae/labels.json",
        colorsPath: "./models/model5_gw_ae/colorLUT.json",
        preModelId: null, // Model run first e.g.  crop the brain   { null, 1, 2, ..  }
@@ -52,7 +52,7 @@ var inferenceModelsList = [
        id: 2,
        type: "Segmentation",
        path:"./models/model20chan3cls/model.json",
-       modelName:"+\u{1F52A} Tissue GWM (High Acc)",
+       modelName:"\u{1F52A} Tissue GWM (High Acc)",
        labelsPath: "./models/model20chan3cls/labels.json",
        colorsPath: "./models/model20chan3cls/colorLUT.json",
        preModelId: null, // Model run first e.g.  crop the brain   { null, 1, 2, ..  }
@@ -76,7 +76,7 @@ var inferenceModelsList = [
        id: 3,
        type: "Segmentation",
        path:"./models/model20chan3cls/model.json",
-       modelName:"-\u{1F52A} Tissue GWM (High Acc, Low Mem)",
+       modelName:"\u{1F52A} Tissue GWM (High Acc, Low Mem)",
        labelsPath: "./models/model20chan3cls/labels.json",
        colorsPath: "./models/model20chan3cls/colorLUT.json",
        preModelId: null, // Model run first e.g.  crop the brain   { null, 1, 2, ..  }
@@ -102,7 +102,7 @@ var inferenceModelsList = [
        id: 4,
        type: "Atlas",
        path:"./models/model30chan18cls/model.json",
-       modelName:"+\u{1FA93} Subcortical + GWM (High Mem, Fast)",
+       modelName:"\u{1FA93} Subcortical + GWM (High Mem, Fast)",
        labelsPath: "./models/model30chan18cls/labels.json",
        colorsPath: "./models/model30chan18cls/colorLUT.json",
        preModelId: null,// Model run first e.g.  crop the brain  { null, 1, 2, ..  }
@@ -126,7 +126,7 @@ var inferenceModelsList = [
        id: 5,
        type: "Atlas",
        path:"./models/model30chan18cls/model.json",
-       modelName:"-\u{1FA93} Subcortical + GWM (Low Mem, Slow)",
+       modelName:"\u{1FA93} Subcortical + GWM (Low Mem, Slow)",
        labelsPath: "./models/model30chan18cls/labels.json",
        colorsPath: "./models/model30chan18cls/colorLUT.json",
        preModelId: null,// Model run first e.g.  crop the brain  { null, 1, 2, ..  }
@@ -150,7 +150,7 @@ var inferenceModelsList = [
        id: 6,
        type: "Atlas",
        path:"./models/model18cls/model.json",
-       modelName:"-\u{1FA93} Subcortical + GWM (Low Mem, Faster)",
+       modelName:"\u{1FA93} Subcortical + GWM (Low Mem, Faster)",
        labelsPath: "./models/model18cls/labels.json",
        colorsPath: "./models/model18cls/colorLUT.json",
        preModelId: null,  // model run first e.g.  Brain_Extraction  { null, 1, 2, ..  }
@@ -174,7 +174,7 @@ var inferenceModelsList = [
        id: 7,
        type: "Atlas",
        path:"./models/model30chan18cls/model.json",
-       modelName:"-\u{1F52A}\u{1FA93} Subcortical + GWM (Failsafe, Less Acc)",
+       modelName:"\u{1F52A}\u{1FA93} Subcortical + GWM (Failsafe, Less Acc)",
        labelsPath: "./models/model30chan18cls/labels.json",
        colorsPath: "./models/model30chan18cls/colorLUT.json",
        preModelId: 1,  // model run first e.g.  Brain_Extraction  { null, 1, 2, ..  }
@@ -198,7 +198,7 @@ var inferenceModelsList = [
        id: 8,
        type: "Atlas",
        path:"./models/model30chan50cls/model.json",
-       modelName:"-\u{1F52A} Aparc+Aseg 50 (High Mem, Fast)",
+       modelName:"\u{1F52A} Aparc+Aseg 50 (High Mem, Fast)",
        labelsPath: "./models/model30chan50cls/labels.json",
        colorsPath: "./models/model30chan50cls/colorLUT.json",
        preModelId: 1,// Model run first e.g.  crop the brain  { null, 1, 2, ..  }
@@ -222,7 +222,7 @@ var inferenceModelsList = [
        id: 9,
        type: "Atlas",
        path:"./models/model30chan50cls/model.json",
-       modelName:"-\u{1F52A} Aparc+Aseg 50 (Low Mem, Slow)",
+       modelName:"\u{1F52A} Aparc+Aseg 50 (Low Mem, Slow)",
        labelsPath: "./models/model30chan50cls/labels.json",
        colorsPath: "./models/model30chan50cls/colorLUT.json",
        preModelId: 1,// Model run first e.g.  crop the brain  { null, 1, 2, ..  }
@@ -247,7 +247,7 @@ var inferenceModelsList = [
        id: 10,
        type: "Brain_Extraction",
        path: "./models/model5_gw_ae/model.json",
-       modelName:"+\u26A1 Extract the Brain (FAST)",
+       modelName:"\u26A1 Extract the Brain (FAST)",
        labelsPath: null,
        colorsPath: null,
        preModelId: null, // Model run first e.g.  crop the brain  { null, 1, 2, ..  }
@@ -271,7 +271,7 @@ var inferenceModelsList = [
        id: 11,
        type: "Brain_Extraction",
        path: "./models/model11_gw_ae/model.json",
-       modelName:"-\u{1F52A} Extract the Brain (High Acc, Slow)",
+       modelName:"\u{1F52A} Extract the Brain (High Acc, Slow)",
        labelsPath: null,
        colorsPath: null,
        preModelId: 1, // Model run first e.g.  crop the brain  { null, 1, 2, ..  }
@@ -295,7 +295,7 @@ var inferenceModelsList = [
        id: 12,
        type: "Brain_Masking",
        path: "./models/model5_gw_ae/model.json",
-       modelName:"+\u26A1 Brain Mask (FAST)",
+       modelName:"\u26A1 Brain Mask (FAST)",
        labelsPath: null,
        colorsPath: null,
        preModelId: null,// Model run first e.g.  crop the brain  { null, 1, 2, ..  }
@@ -319,7 +319,7 @@ var inferenceModelsList = [
        id: 13,
        type: "Brain_Masking",
        path: "./models/model11_gw_ae/model.json",
-       modelName:"-\u{1F52A} Brain Mask (High Acc, Low Mem)",
+       modelName:"\u{1F52A} Brain Mask (High Acc, Low Mem)",
        labelsPath: null,
        colorsPath: null,
        preModelId: 1,// Model run first e.g.  crop the brain  { null, 1, 2, ..  }
@@ -343,7 +343,7 @@ var inferenceModelsList = [
        id: 14,
        type: "Atlas",
        path:"./models/model21_104class/model.json",
-       modelName:"-\u{1F52A} Aparc+Aseg 104 (High Mem, Fast)",
+       modelName:"\u{1F52A} Aparc+Aseg 104 (High Mem, Fast)",
        labelsPath: "./models/model21_104class/labels.json",
        colorsPath: "./models/model21_104class/colorLUT.json",
        preModelId: 1,  // model run first e.g.  Brain_Extraction  { null, 1, 2, ..  }
@@ -367,7 +367,7 @@ var inferenceModelsList = [
        id: 15,
        type: "Atlas",
        path:"./models/model21_104class/model.json",
-       modelName:"-\u{1F52A} Aparc+Aseg 104 (Low Mem, Slow)",
+       modelName:"\u{1F52A} Aparc+Aseg 104 (Low Mem, Slow)",
        labelsPath: "./models/model21_104class/labels.json",
        colorsPath: "./models/model21_104class/colorLUT.json",
        preModelId: 1,  // model run first e.g.  Brain_Extraction  { null, 1, 2, ..  }
@@ -552,8 +552,13 @@ async function isChrome() {
   return /Chrome/.test(navigator.userAgent) && /Google Inc/.test(navigator.vendor)
 }
 
-async function submitTiming2GoogleSheet(dataObj, isOnline = false) {
-  if(isOnline()){
+async function submitTiming2GoogleSheet(dataObj, callbackUI) {
+  if(navigator.onLine){
+    let msg = "Telemetry not yet supported"
+    callbackUI(msg, -1, msg)
+    console.log(dataObj)
+    
+    /*
     // -- Fill form with data to submit
     Object.keys(dataObj).forEach(dataKey =>{
          document.getElementById(dataKey).value = dataObj[dataKey];
@@ -570,6 +575,7 @@ async function submitTiming2GoogleSheet(dataObj, isOnline = false) {
     })
     //-- Submit the form
     document.getElementById("SubmitStatisticalData").click();
+    */
   } else {
     console.log(" Offline Mode ")
   }
@@ -587,19 +593,19 @@ async function getModelNumLayers( modelObj) {
   return modelObj.layers.length
 }
 
-async function load_model ( modelUrl) {
+async function load_model( modelUrl) {
   return await tf.loadLayersModel(modelUrl)
 }
 
-async function minMaxNormalizeVolumeData (volumeData) {
+async function minMaxNormalizeVolumeData(volumeData) {
   //Normalize the data to the range 0 - 1 using min-max scaling
   const volumeData_Max = volumeData.max()
   const volumeData_Min = volumeData.min()
-  const normalizedSlices_3d = volumeData.sub(volumeData_Min).div(volumeData_Max.sub(volumeData_Min))
+  const normalizedSlices_3d = await volumeData.sub(volumeData_Min).div(volumeData_Max.sub(volumeData_Min))
   return  normalizedSlices_3d
 }
 
-async function addZeroPaddingTo3dTensor (tensor3d, rowPadArr = [1, 1], colPadArr = [1, 1], depthPadArr = [1, 1]) {
+async function addZeroPaddingTo3dTensor(tensor3d, rowPadArr = [1, 1], colPadArr = [1, 1], depthPadArr = [1, 1]) {
   if(tensor3d.rank != 3) {
     throw "Tensor must be 3D"
   }
@@ -623,7 +629,6 @@ async function removeZeroPaddingFrom3dTensor(tensor3d, rowPad = 1, colPad = 1, d
 
 async function applyMriThreshold(tensor, percentage) {
     // Perform asynchronous operations outside of tf.tidy
-    console.log(tensor)
     const maxTensor = tensor.max();
     const thresholdTensor = maxTensor.mul(percentage);
     const threshold = await thresholdTensor.data(); // Extracts the threshold value
@@ -646,6 +651,79 @@ async function applyMriThreshold(tensor, percentage) {
 
     //-- return denoisedMriData;
 }
+
+
+async function binarizeVolumeDataTensor (volumeDataTensor) {
+   let alpha = 0;
+   // element-wise: (x > 0 ? 1 : alpha * x );  e.g. Tenosr [0, 0.9, 0.8, -3] => Tensor [0, 1, 1, 0]
+   return  volumeDataTensor.step(alpha);
+
+}
+async function generateBrainMask(unstackOutVolumeTensor, num_of_slices, slice_height, slice_width, modelEntry, opts, callbackUI, callbackImg) {
+
+        console.log("Generate Brain Masking ... ");
+        // Convert all slices into 1 Dim array to download
+
+        let allOutputSlices3DCC = [];
+        let allOutputSlices3DContours = [];
+
+
+        // dataSync() using to flatten array. Takes around 1.5 s
+        for(let sliceTensorIdx = 0; sliceTensorIdx < unstackOutVolumeTensor.length; sliceTensorIdx++ ) {
+              allOutputSlices3DCC[sliceTensorIdx] = Array.from(unstackOutVolumeTensor[sliceTensorIdx].dataSync());
+        }
+        let isPreModelPostProcessEnable = modelEntry.preModelPostProcess
+        //let isPreModelPostProcessEnable = inferenceModelsList[$$("selectModel").getValue() - 1]["preModelPostProcess"];
+
+        if(isPreModelPostProcessEnable) {
+            console.log("Phase-1 Post processing enabled ... ");
+            allOutputSlices3DCC = tf.tidy(() => {
+                  // Remove noisy regions using 3d CC
+                  let sliceWidth = niftiHeader.dims[1];
+                  let sliceHeight = niftiHeader.dims[2];
+                  return postProcessSlices3D(allOutputSlices3DCC, sliceHeight, sliceWidth );
+            })
+            console.log("Post processing done ");
+        } else {
+            console.log("Phase-1 Post processing disabled ... ");
+        }
+
+
+        let allOutputSlices3DCC1DimArray = [];
+        // Use this conversion to download output slices as nii file. Takes around 0.5 s
+        for(let sliceIdx = 0; sliceIdx < allOutputSlices3DCC.length; sliceIdx++ ) {
+              allOutputSlices3DCC1DimArray.push.apply(allOutputSlices3DCC1DimArray, allOutputSlices3DCC[sliceIdx]);
+        }
+
+
+        let  brainOut = [];
+
+        if(opts.isBrainCropMaskBased) { //  Mask-based
+
+             let brainMaskTensor1d = await binarizeVolumeDataTensor(tf.tensor1d(allOutputSlices3DCC1DimArray));
+             brainOut = Array.from(brainMaskTensor1d.dataSync());
+
+        } else { //  Brain tissue
+
+            let allSlices = getAllSlicesData1D(num_of_slices, niftiHeader, niftiImage);
+            for(let sliceIdx = 0; sliceIdx < allOutputSlices3DCC.length; sliceIdx++ ) {
+                for(pixelIdx = 0; pixelIdx < (slice_height * slice_width); pixelIdx++) {
+                     //Filter smaller regions original MRI data
+                     if(allOutputSlices3DCC[sliceIdx][pixelIdx] == 0) {
+                        allSlices[sliceIdx][pixelIdx] = 0;
+                     }
+                 }
+
+                 brainOut.push.apply(brainOut, allSlices[sliceIdx])
+            }
+       }
+
+       callbackImg(brainOut, opts, modelEntry)
+       callbackUI("Segmentation finished", 0)
+       return tf.tensor(brainOut, [num_of_slices, slice_height, slice_width] );
+
+
+  }
 
 async function convByOutputChannelAndInputSlicing(input, filter, biases, stride, pad, dilationRate, sliceSize) {
     const batchSize = input.shape[0];
@@ -696,8 +774,8 @@ async function convByOutputChannelAndInputSlicing(input, filter, biases, stride,
         // Accumulate the channel to the output array
         if (outputChannels == null){
             outputChannels = biasedOutputChannel;
-        }else{
-            const updatedOutputChannels = tf.concat([outputChannels, biasedOutputChannel], 4);
+        } else {
+            const updatedOutputChannels = await tf.concat([outputChannels, biasedOutputChannel], 4);
             biasedOutputChannel.dispose();
             outputChannels.dispose();
             outputChannels = updatedOutputChannels;
@@ -707,12 +785,72 @@ async function convByOutputChannelAndInputSlicing(input, filter, biases, stride,
     return outputChannels;
 }
 
+function processTensorInChunks(inputTensor, filterWeights, chunkSize) {
+    // Assuming inputTensor's shape: [batch, depth, height, width, inChannels]
+    // and filterWeights's shape: [filterDepth, filterHeight, filterWidth, inChannels, outChannels]
+    const stride = 1;
+    const pad = 0;
+    const dilationRate = 1;
+    const inChannels = inputTensor.shape[4];
+    const numSlices = Math.ceil(inChannels / chunkSize);
+
+    let accumulatedResult = null;
+
+    for (let i = 0; i < numSlices; i++) {
+        const startChannel = i * chunkSize;
+        const endChannel = Math.min((i + 1) * chunkSize, inChannels);
+        const channels = endChannel - startChannel;
+
+        const inputSlice = tf.tidy(() => {
+            // Slice the input tensor to get the current chunk
+            return inputTensor.slice([0, 0, 0, 0, startChannel], [-1, -1, -1, -1, channels]);
+        });
+
+        const filterSlice = tf.tidy(() => {
+            // Slice the filter weights to match the input tensor's current chunk
+            return filterWeights.slice([0, 0, 0, startChannel, 0], [-1, -1, -1, channels, -1]);
+        });
+
+        const resultSlice = tf.conv3d(inputSlice, filterSlice, stride, pad, 'NDHWC', dilationRate);
+        // Clean up the slices to free memory
+        inputSlice.dispose();
+        filterSlice.dispose();
+
+        // Squeeze the result slice to remove dimensions of size 1
+        const squeezedResultSlice = tf.squeeze(resultSlice);
+        resultSlice.dispose(); // Dispose of the original resultSlice after squeezing
+
+        if (accumulatedResult === null) {
+            accumulatedResult = squeezedResultSlice;
+        } else {
+            // Accumulate the result by adding the new result slice to it
+            const newAccumulatedResult = accumulatedResult.add(squeezedResultSlice);
+
+            // Dispose of the previous accumulatedResult and squeezedResultSlice
+            accumulatedResult.dispose();
+            // Dispose of squeezedResultSlice only if it wasn't assigned to accumulatedResult
+            if (accumulatedResult !== squeezedResultSlice) {
+                squeezedResultSlice.dispose();
+            }
+            // Update accumulatedResult with the new result
+            accumulatedResult = newAccumulatedResult;
+        }
+
+        tf.tidy(() => {
+            tf.matMul(tf.zeros([1, 1]), tf.zeros([1, 1]));
+        });
+    }
+
+    return accumulatedResult;
+}
+
 class SequentialConvLayer {
-    constructor(model, chunkSize, isChannelLast) {
+    constructor(model, chunkSize, isChannelLast, callbackUI) {
         this.model = model;
         this.outChannels = model.outputLayers[0].kernel.shape[4];
         this.chunkSize = chunkSize;
         this.isChannelLast = isChannelLast;
+        this.callbackUI = callbackUI; //fork
     }
 
     /**
@@ -798,7 +936,7 @@ class SequentialConvLayer {
                   console.log(`| Number of Data Buffers: ${memoryInfo0.numDataBuffers}`);
                   console.log("Channel : ", chIdx);
 
-                  const result = tf.tidy(() => {
+                  const result = await tf.tidy(() => {
                       const filterWeights = weights.slice([0, 0, 0, 0, chIdx], [-1, -1, -1, -1, 1]);
                       // -- e.g. filterWeights.shape [ 1, 1, 1, 5, 1 ]
                       const filterBiases = biases.slice([chIdx], [1]);
@@ -827,13 +965,14 @@ class SequentialConvLayer {
                   // Log memory usage
 
                   const memoryInfo = tf.memory();
-                  console.log(`Iteration ${chIdx}:`);
+                  self.callbackUI(`Iteration ${chIdx}`, chIdx/self.outChannels)
                   console.log(`Number of Tensors: ${memoryInfo.numTensors}`);
                   console.log(`Number of Data Buffers: ${memoryInfo.numDataBuffers}`);
                   console.log(`Bytes In Use: ${memoryInfo.numBytes}`);
                   console.log(`Megabytes In Use: ${(memoryInfo.numBytes / 1048576).toFixed(3)} MB`);
-                  console.log(`Unreliable: ${memoryInfo.unreliable}`);
-
+                  if (memoryInfo.unreliable) {
+                    console.log(`Unreliable: ${memoryInfo.unreliable}`);
+                  }
                   // Dispose of previous values before assigning new tensors to outC and outB
                   if (typeof outC !== 'undefined') outC.dispose();
                   if (typeof outB !== 'undefined') outB.dispose();
@@ -848,7 +987,7 @@ class SequentialConvLayer {
                   if(chIdx == (self.outChannels -1)) {
 
                       window.clearInterval( seqTimer );
-                      document.getElementById("progressBarChild").style.width = 0 + "%";
+                      // document.getElementById("progressBarChild").style.width = 0 + "%";
                       tf.dispose(outB);
                       const endTime = performance.now();
                       const executionTime = endTime - startTime;
@@ -874,8 +1013,8 @@ class SequentialConvLayer {
                       //tf.disposeVariables()
                       outC = tf.tensor(outCdata, outCShape);
                       outB = tf.tensor(outBdata, outBShape);
-
-                    document.getElementById("progressBarChild").style.width = (chIdx + 1) * 100 / self.outChannels + "%";
+                    
+                    //document.getElementById("progressBarChild").style.width = (chIdx + 1) * 100 / self.outChannels + "%";
 
                   }
 
@@ -889,16 +1028,14 @@ class SequentialConvLayer {
 
     }
 
-
-
 } // <<<< End of class
 
-async function inferenceFullVolumeSeqCovLayerPhase2 (opts, modelEntry, model, slices_3d, num_of_slices, slice_height, slice_width, pipeline1_out, callbackUI, statData) {
-
+async function inferenceFullVolumeSeqCovLayerPhase2(opts, modelEntry, model, slices_3d, num_of_slices, slice_height, slice_width, pipeline1_out, callbackUI, callbackImg, statData, niftiImage) {
            //--Phase-2, After remove the skull try to allocate brain volume and make inferece
+           
            console.log(" ---- Start FullVolume Inference with Sequential Conv Layer for phase-II ---- ");
+           //console.log("BOB", callbackUI); console.log("UNCLE",callbackImg); return
            let quantileNorm = modelEntry.enableQuantileNorm;
-
            if(quantileNorm) {
               // Quantile normalize function needs specific models to be used
               console.log("preModel Quantile normalization enabled");
@@ -913,7 +1050,7 @@ async function inferenceFullVolumeSeqCovLayerPhase2 (opts, modelEntry, model, sl
 
            let mask_3d;
 
-           if(pipeline1_out == null) { // preModel is null
+           if (pipeline1_out == null) { // preModel is null
 
               // Check if thresholding the MRI to remove noisy voxels for better cropping is needed.
               let autoThresholdValue = modelEntry.autoThreshold;
@@ -925,12 +1062,11 @@ async function inferenceFullVolumeSeqCovLayerPhase2 (opts, modelEntry, model, sl
               } else {
                  console.log("No valid crop threshold value");
                  // binarize original image
-                 mask_3d = slices_3d.greater([0]).asType('bool');
+                 mask_3d = await slices_3d.greater([0]).asType('bool');
               }
-
            } else {
 
-              mask_3d = pipeline1_out.greater([0]).asType('bool');
+              mask_3d = await pipeline1_out.greater([0]).asType('bool');
               //-- pipeline1_out.dispose();
 
            }
@@ -942,7 +1078,7 @@ async function inferenceFullVolumeSeqCovLayerPhase2 (opts, modelEntry, model, sl
 
            mask_3d.dispose();
 
-           const coordsArr =    coords.arraySync();
+           const coordsArr = coords.arraySync();
 
            let row_min = slice_height,  row_max = 0,  col_min = slice_width,  col_max = 0,  depth_min = num_of_slices,  depth_max = 0;
 
@@ -980,8 +1116,7 @@ async function inferenceFullVolumeSeqCovLayerPhase2 (opts, modelEntry, model, sl
           coords.dispose();
 
            //-- Extract 3d object (e.g. brain)
-          let cropped_slices_3d =  slices_3d.slice([row_min, col_min, depth_min], [row_max - row_min + 1, col_max - col_min + 1, depth_max - depth_min + 1] )
-
+          let cropped_slices_3d = await slices_3d.slice([row_min, col_min, depth_min], [row_max - row_min + 1, col_max - col_min + 1, depth_max - depth_min + 1] )
           slices_3d.dispose();
 
           //-- Padding size add to cropped brain
@@ -994,12 +1129,13 @@ async function inferenceFullVolumeSeqCovLayerPhase2 (opts, modelEntry, model, sl
           cropped_slices_3d.dispose();
 
 
+
           if(opts.drawBoundingVolume) {
 
-                let testVol = removeZeroPaddingFrom3dTensor(cropped_slices_3d_w_pad, pad, pad, pad);
+                let testVol = await removeZeroPaddingFrom3dTensor(cropped_slices_3d_w_pad, pad, pad, pad);
                 console.log(" outLabelVolume without padding shape :  ", testVol.shape);
 
-                testVol =  resizeWithZeroPadding(testVol, num_of_slices, slice_height, slice_width, refVoxel,  boundVolSizeArr );
+                testVol = await resizeWithZeroPadding(testVol, num_of_slices, slice_height, slice_width, refVoxel,  boundVolSizeArr );
                 console.log(" outLabelVolume final shape after resizing :  ", testVol.shape);
 
                 draw3dObjBoundingVolume(tf.unstack(testVol));
@@ -1010,8 +1146,8 @@ async function inferenceFullVolumeSeqCovLayerPhase2 (opts, modelEntry, model, sl
 
 
           statData["Brainchop_Ver"] = "FullVolume";
-//mork
           //model.then(function (res) {
+//console.log("--->>>>", opts.drawBoundingVolume); return
           let res = await model
                  try {
                       let startTime = performance.now();
@@ -1023,7 +1159,7 @@ async function inferenceFullVolumeSeqCovLayerPhase2 (opts, modelEntry, model, sl
                       console.log("Inference delay :", delay);
 
                       if(transpose) {
-                         cropped_slices_3d_w_pad = cropped_slices_3d_w_pad.transpose()
+                         cropped_slices_3d_w_pad = await cropped_slices_3d_w_pad.transpose()
                          console.log("Input transposed for pre-model");
                       } else {
                          console.log("Transpose not enabled for pre-model");
@@ -1068,8 +1204,8 @@ async function inferenceFullVolumeSeqCovLayerPhase2 (opts, modelEntry, model, sl
                       statData["Input_Shape"] = JSON.stringify(res.layers[0].batchInputShape);
                       statData["Output_Shape"] = JSON.stringify(res.output.shape);
                       statData["Channel_Last"] = isChannelLast;
-                      statData["Model_Param"] = getModelNumParameters(res);
-                      statData["Model_Layers"] = getModelNumLayers(res);
+                      statData["Model_Param"] = await getModelNumParameters(res);
+                      statData["Model_Layers"] = await getModelNumLayers(res);
                       statData["Model"] = modelEntry.modelName;
                       statData["Extra_Info"] = null;
 
@@ -1087,7 +1223,7 @@ async function inferenceFullVolumeSeqCovLayerPhase2 (opts, modelEntry, model, sl
 
 
                       let curTensor = [];
-                      curTensor[0] = cropped_slices_3d_w_pad.reshape(adjusted_input_shape);
+                      curTensor[0] = await cropped_slices_3d_w_pad.reshape(adjusted_input_shape);
                       // console.log("curTensor[0] :", curTensor[0].dataSync());
 
                       // let curProgBar = parseInt(document.getElementById("progressBar").style.width);
@@ -1096,7 +1232,7 @@ async function inferenceFullVolumeSeqCovLayerPhase2 (opts, modelEntry, model, sl
 
                          try {
                                   if (res.layers[i].activation.getClassName() !== 'linear') {
-                                      curTensor[i] = res.layers[i].apply( curTensor[i-1]);
+                                      curTensor[i] = await res.layers[i].apply( curTensor[i-1]);
                                   } else {
 
                                       curTensor[i] = await convByOutputChannelAndInputSlicing(curTensor[i-1],
@@ -1123,30 +1259,9 @@ async function inferenceFullVolumeSeqCovLayerPhase2 (opts, modelEntry, model, sl
 
                             } catch(err) {
 
-                                  if( err.message === "Failed to compile fragment shader.") {
-                                                  webix.confirm({
-                                                    title:"",
-                                                    ok:"Ok",
-                                                    cancel:"Cancel",
-                                                    type: "confirm-error",
-                                                    width: 500,
-                                                    text: "Context lost due to limited Memory available, please check current browser resouces in the toolbar and verified GPUs for each model"
-                                                  })
-                                                    .then(() => {
-                                                           //---
-                                                           $$("browserResourcesWindow").show();
-
-
-                                                  }).fail(() => {
-                                                           //---
-
-                                                  });
-
-                                  } else {
-                                      //?? webix.alert(err.message);
-                                      callbackUI(err.message, -1, err.message)
-                                  }
-
+                                  //? original code provided special dialog for shaders if( err.message === "Failed to compile fragment shader.") {
+                                  callbackUI(err.message, -1, err.message)
+                                  
                                   window.clearInterval( timer );
                                   tf.engine().endScope();
                                   tf.engine().disposeVariables();
@@ -1158,13 +1273,12 @@ async function inferenceFullVolumeSeqCovLayerPhase2 (opts, modelEntry, model, sl
                                   statData["Extra_Err_Info"] = "Failed while model layer " + i + " apply";
 
                                   if(opts.telemetryFlag) {
-                                      await submitTiming2GoogleSheet(statData);
+                                      await submitTiming2GoogleSheet(statData, callbackUI);
                                   }
 
                                   return 0;
                             }
 
-                            console.log("layer ", i);
                             console.log("layer output Tensor shape : ", curTensor[i].shape);
                             console.log("layer count params ", res.layers[i].countParams());
 
@@ -1181,22 +1295,19 @@ async function inferenceFullVolumeSeqCovLayerPhase2 (opts, modelEntry, model, sl
 
                                     window.clearInterval( timer );
 
-
                                     // // Create an instance of SequentialConvLayer
                                     //The second parameter is important for memory,
                                     // the larger it is, the more memory it uses
                                     // it was 8, but I set it to 3, got a different error
-                                    let seqConvLayer = new SequentialConvLayer(res, 10, isChannelLast);
-
+                                    //let seqConvLayer = new SequentialConvLayer(res, 10, isChannelLast);
+                                    let seqConvLayer = await new SequentialConvLayer(res, 10, isChannelLast, callbackUI);
 
                                     // Apply the last output tensor to the seq. instance
                                     let outputTensor = null;
-
                                     const profileInfo = await tf.profile(async() => {
                                       // Your tensor operations here
                                          outputTensor = await seqConvLayer.apply(curTensor[i]);
                                     });
-
                                     console.log("profileInfo : ",profileInfo);
 
                                     //-- document.getElementById("progressBarChild").style.width = 0 + "%";;
@@ -1207,19 +1318,19 @@ async function inferenceFullVolumeSeqCovLayerPhase2 (opts, modelEntry, model, sl
                                     //? delete seqConvLayer;
 
                                     // You can now use 'outputTensor' as needed
-                                    console.log(outputTensor);
+                                    console.log(" Output tensor", outputTensor);
                                     console.log(" Output tensor shape : ", outputTensor.shape);
                                     // Array(3) [ 256, 256, 256 ]
 
                                     if(outputTensor.shape.length != 3) {
-                                        webix.alert("Output tensor shape should be 3 dims but it is " + outputTensor.shape.length, "alert-error");
+                                       let msg = "Output tensor shape should be 3 dims but it is " + outputTensor.shape.length
+                                       callbackUI(msg, -1, msg)
                                     }
-
 
                                     let Inference_t = ((performance.now() - startTime)/1000).toFixed(4);
 
                                     console.log(" find array max ");
-                                    let curBatchMaxLabel =  findArrayMax(Array.from(outputTensor.dataSync()));
+                                    let curBatchMaxLabel =  await findArrayMax(Array.from(outputTensor.dataSync()));
 
                                     if( maxLabelPredicted < curBatchMaxLabel ) {
                                           maxLabelPredicted = curBatchMaxLabel;
@@ -1230,10 +1341,9 @@ async function inferenceFullVolumeSeqCovLayerPhase2 (opts, modelEntry, model, sl
                                     statData["Actual_Labels"] = numSegClasses;
                                     statData["Expect_Labels"] = expected_Num_labels;
                                     statData["NumLabels_Match"] = numSegClasses == expected_Num_labels? true : false;
-
                                     if( numSegClasses != expected_Num_labels ) {
-                                        webix.alert("expected " + expected_Num_labels + " labels, but the predicted are " + numSegClasses + ". For possible solutions please refer to <a href='https://github.com/neuroneural/brainchop/wiki/FAQ#Q3' target='_blank'><b> FAQ </b></a>.", "alert-error");
-                                        console.log("expected " + expected_Num_labels + " labels, but the predicted are " + numSegClasses);
+                                        let msg = "expected " + expected_Num_labels + " labels, but the predicted are " + numSegClasses
+                                        callbackUI(msg, -1, msg)
                                     }
 
                                     //-- Transpose back to fit Papaya display settings
@@ -1246,32 +1356,34 @@ async function inferenceFullVolumeSeqCovLayerPhase2 (opts, modelEntry, model, sl
                                        outLabelVolume = outLabelVolume.transpose();
                                     }
 
-                                    outLabelVolume = removeZeroPaddingFrom3dTensor(outLabelVolume, pad, pad, pad);
+                                    outLabelVolume = await removeZeroPaddingFrom3dTensor(outLabelVolume, pad, pad, pad);
                                     console.log(" outLabelVolume without padding shape :  ", outLabelVolume.shape);
-                                    outLabelVolume =  resizeWithZeroPadding(outLabelVolume, num_of_slices, slice_height, slice_width, refVoxel,  boundVolSizeArr );
+                                    outLabelVolume =  await resizeWithZeroPadding(outLabelVolume, num_of_slices, slice_height, slice_width, refVoxel,  boundVolSizeArr );
                                     console.log(" outLabelVolume final shape after resizing :  ", outLabelVolume.shape);
 
-                                    let filterOutWithPreMask =  inferenceModelsList[$$("selectModel").getValue() - 1]["filterOutWithPreMask"];
-
+                                    //let filterOutWithPreMask =  inferenceModelsList[$$("selectModel").getValue() - 1]["filterOutWithPreMask"];
+                                    let filterOutWithPreMask =  modelEntry.filterOutWithPreMask
                                     // To clean the skull area wrongly segmented inphase-2.
                                     if(pipeline1_out != null && opts.isBrainCropMaskBased && filterOutWithPreMask) {
-                                        outLabelVolume = outLabelVolume.mul(binarizeVolumeDataTensor(pipeline1_out));
+                                        let bin = await binarizeVolumeDataTensor(pipeline1_out)
+                                        outLabelVolume = await outLabelVolume.mul(bin);
                                     }
 
 
                                     startTime = performance.now();
                                     // Generate output volume or slices
                                     console.log("Generating correct output");
-
+                                    let outimg
                                     try {
-                                        const img = new Uint32Array(outLabelVolume.dataSync());
+                                        const img = await new Uint32Array(outLabelVolume.dataSync());
                                         const Vshape = outLabelVolume.shape;
                                         const Vtype = outLabelVolume.dtype;
+                                        outimg = await generateOutputSlicesV2(img, Vshape, Vtype, num_of_slices, numSegClasses, slice_height, slice_width, modelEntry, opts, niftiImage);
+                                        console.log(" Phase-2 num of tensors after generateOutputSlicesV2: " , tf.memory().numTensors );
+
                                         tf.dispose(outLabelVolume);
                                         tf.engine().endScope();
                                         tf.engine().disposeVariables();
-                                        generateOutputSlicesV2(img, Vshape, Vtype, num_of_slices, numSegClasses, slice_height, slice_width, niftiImage);
-                                        console.log(" Phase-2 num of tensors after generateOutputSlicesV2: " , tf.memory().numTensors );
 
                                     } catch (error) {
 
@@ -1279,9 +1391,9 @@ async function inferenceFullVolumeSeqCovLayerPhase2 (opts, modelEntry, model, sl
                                             tf.engine().endScope();
                                             tf.engine().disposeVariables();
                                             console.log("Error while generating output: ", error)
-
-                                            webix.alert("Failed while generating output due to limited browser memory available");
-
+                                            let msg = "Failed while generating output due to limited browser memory available"
+                                            callbackUI(msg, -1, msg)
+                                            
                                             statData["Inference_t"] = Inference_t;
                                             statData["Postprocess_t"] = Infinity;
                                             statData["Status"] = "Fail";
@@ -1289,20 +1401,14 @@ async function inferenceFullVolumeSeqCovLayerPhase2 (opts, modelEntry, model, sl
                                             statData["Extra_Err_Info"] = "Failed while generating output";
 
                                            if(opts.telemetryFlag) {
-                                                await submitTiming2GoogleSheet(statData);
+                                                await submitTiming2GoogleSheet(statData, callbackUI);
                                            }
 
                                            return 0;
                                     }
-
                                     let Postprocess_t = ((performance.now() - startTime)/1000).toFixed(4);
 
-                                    document.getElementById("progressBar").style.width = 0;
-                                    //webix.message.hide("waitMessage");
-
-                                    $$("downloadBtn").enable();
-                                    $$("segmentBtn").enable();
-                                    //    $$("imageUploader").enable();
+                                    //document.getElementById("progressBar").style.width = 0;
                                     tf.engine().disposeVariables();
 
                                     console.log("Processing the whole brain volume in tfjs for multi-class output mask took : ",
@@ -1315,9 +1421,10 @@ async function inferenceFullVolumeSeqCovLayerPhase2 (opts, modelEntry, model, sl
                                     statData["Status"] = "OK";
 
                                     if(opts.telemetryFlag) {
-                                          await submitTiming2GoogleSheet(statData);
+                                          await submitTiming2GoogleSheet(statData, callbackUI);
                                     }
-
+                                    callbackImg(outimg, opts, modelEntry)
+                                    callbackUI("Segmentation finished", 0)
                             }  else {
 
                                    i++;
@@ -1331,11 +1438,10 @@ async function inferenceFullVolumeSeqCovLayerPhase2 (opts, modelEntry, model, sl
                             "If webgl context is lost, try to restore webgl context by visit the link " +
                             '<a href="https://support.biodigital.com/hc/en-us/articles/218322977-How-to-turn-on-WebGL-in-my-browser">here</a>'
                         );
-
-
-                        document.getElementById("webGl2Status").style.backgroundColor =  isWebGL2ContextLost() ? "Red" : "Green";
-
-                        document.getElementById("memoryStatus").style.backgroundColor =  tf.memory().unreliable ? "Red" : "Green";
+                        if (tf.memory().unreliable) {
+                          const unreliableReasons = "unreliable reasons :" + tf.memory().reasons
+                          callbackUI(unreliableReasons, NaN, unreliableReasons)
+                        }
                   }
             //});
 
@@ -1410,7 +1516,7 @@ async function resizeWithZeroPadding(croppedTensor3d, newDepth, newHeight, newWi
         return croppedTensor3d.pad([ [row_pad_befor, row_pad_after] ,[col_pad_befor, col_pad_after], [depth_pad_befor, depth_pad_after] ])
 }
 
-async function generateOutputSlicesV2 (img, OutVolumeTensorShape, OutVolumeTensorType, num_of_slices, numSegClasses, slice_height, slice_width, modelEntry, opts, niftiImage) {
+async function generateOutputSlicesV2(img, OutVolumeTensorShape, OutVolumeTensorType, num_of_slices, numSegClasses, slice_height, slice_width, modelEntry, opts, niftiImage) {
   // Convert all slices into 1 Dim array
   let allOutputSlices3DCC = []
   let allOutputSlices3DContours = []
@@ -1505,9 +1611,7 @@ async function inferenceFullVolumePhase2 (model, slices_3d, num_of_slices, slice
               console.log("preModel Min Max normalization enabled")
               slices_3d = await minMaxNormalizeVolumeData(slices_3d)
            }
-
            let mask_3d
-
            if(pipeline1_out == null) { // preModel is null
 
               // Check if thresholding the MRI to remove noisy voxels for better cropping is needed.
@@ -1520,7 +1624,7 @@ async function inferenceFullVolumePhase2 (model, slices_3d, num_of_slices, slice
               } else {
                  console.log("No valid crop threshold value")
                  // binarize original image
-                 mask_3d = slices_3d.greater([0]).asType('bool')
+                 mask_3d = await slices_3d.greater([0]).asType('bool')
               }
            } else {
               mask_3d = pipeline1_out.greater([0]).asType('bool')
@@ -1617,7 +1721,7 @@ async function inferenceFullVolumePhase2 (model, slices_3d, num_of_slices, slice
           let res = await model
           //?
           //model.then(function (res) {
-                // try {
+                 try {
                       startTime = performance.now()
                       let inferenceStartTime = performance.now()
                       // maxLabelPredicted in whole volume of the brain
@@ -1672,8 +1776,8 @@ async function inferenceFullVolumePhase2 (model, slices_3d, num_of_slices, slice
                       statData["Input_Shape"] = JSON.stringify(res.layers[0].batchInputShape)
                       statData["Output_Shape"] = JSON.stringify(res.output.shape)
                       statData["Channel_Last"] = isChannelLast
-                      statData["Model_Param"] = getModelNumParameters(res)
-                      statData["Model_Layers"] = getModelNumLayers(res)
+                      statData["Model_Param"] = await getModelNumParameters(res)
+                      statData["Model_Layers"] = await getModelNumLayers(res)
                       statData["Model"] = modelEntry.modelName
                       statData["Extra_Info"] = null
 
@@ -1683,15 +1787,16 @@ async function inferenceFullVolumePhase2 (model, slices_3d, num_of_slices, slice
                       // console.log("curTensor[0] :", curTensor[0].dataSync())
 
                       //? let curProgBar = parseInt(document.getElementById("progressBar").style.width)
-
-                      let mytimer = await window.setInterval(async function() {
+                      //let timer = window.setInterval(function() {
+                      // ???? subsequent await are required
+                      let timer = window.setInterval(async function() {
                             try {
                                   //-- curTensor[i] = res.layers[i].apply( curTensor[i-1])
                                   curTensor[i] = res.layers[i].apply( curTensor[i-1])
 
                             } catch(err) {
                                   callbackUI(err.message, -1, err.message)
-                                  window.clearInterval( mytimer )
+                                  window.clearInterval( timer )
                                   tf.engine().endScope()
                                   tf.engine().disposeVariables()
 
@@ -1702,7 +1807,7 @@ async function inferenceFullVolumePhase2 (model, slices_3d, num_of_slices, slice
                                   statData["Extra_Err_Info"] = "Failed while model layer " + i + " apply"
 
                                   if(opts.telemetryFlag) {
-                                      await submitTiming2GoogleSheet(statData)
+                                      submitTiming2GoogleSheet(statData, callbackUI)
                                   }
 
                                   return 0
@@ -1720,7 +1825,7 @@ async function inferenceFullVolumePhase2 (model, slices_3d, num_of_slices, slice
 
 
                             if( i == layersLength - 1) {
-                                window.clearInterval( mytimer )
+                                window.clearInterval( timer )
 
                                 // prediction = res.layers[res.layers.length-1].apply(curTensor[i])
                                 // curTensor[i].print()
@@ -1758,7 +1863,7 @@ async function inferenceFullVolumePhase2 (model, slices_3d, num_of_slices, slice
                                                 callbackUI(errTxt, -1, errTxt)
 
 
-                                                window.clearInterval( mytimer )
+                                                window.clearInterval( timer )
                                                 tf.engine().endScope()
                                                 tf.engine().disposeVariables()
 
@@ -1769,7 +1874,7 @@ async function inferenceFullVolumePhase2 (model, slices_3d, num_of_slices, slice
                                                 statData["Extra_Err_Info"] = "prediction_argmax from argMaxLarge failed"
 
                                                if(opts.telemetryFlag) {
-                                                    await submitTiming2GoogleSheet(statData)
+                                                    submitTiming2GoogleSheet(statData, callbackUI)
                                                }
 
                                                return 0
@@ -1784,7 +1889,7 @@ async function inferenceFullVolumePhase2 (model, slices_3d, num_of_slices, slice
 
                                         prediction_argmax.dispose()
 
-                                        window.clearInterval( mytimer )
+                                        window.clearInterval( timer )
                                         tf.engine().endScope()
                                         tf.engine().disposeVariables()
 
@@ -1795,7 +1900,7 @@ async function inferenceFullVolumePhase2 (model, slices_3d, num_of_slices, slice
                                         statData["Extra_Err_Info"] = "prediction_argmax from argMaxLarge not support yet channel first"
 
                                        if(opts.telemetryFlag) {
-                                            await submitTiming2GoogleSheet(statData)
+                                            submitTiming2GoogleSheet(statData, callbackUI)
                                        }
 
                                        return 0
@@ -1814,7 +1919,7 @@ async function inferenceFullVolumePhase2 (model, slices_3d, num_of_slices, slice
                                 tf.dispose(curTensor[i])
                                 // allPredictions.push({"id": allBatches[j].id, "coordinates": allBatches[j].coordinates, "data": Array.from(prediction_argmax.dataSync()) })
                                 console.log(" find array max ")
-                                //? await
+                                //???? await
                                 let curBatchMaxLabel = await findArrayMax(Array.from(prediction_argmax.dataSync()))
 
                                 if( maxLabelPredicted < curBatchMaxLabel ) {
@@ -1844,33 +1949,36 @@ async function inferenceFullVolumePhase2 (model, slices_3d, num_of_slices, slice
                                    console.log("outLabelVolume transposed")
                                    outLabelVolume = outLabelVolume.transpose()
                                 }
-                                //? await
+                                //???? await
                                 outLabelVolume = await removeZeroPaddingFrom3dTensor(outLabelVolume, pad, pad, pad)
                                 console.log(" outLabelVolume without padding shape :  ", outLabelVolume.shape)
-                                //? await
+                                //???? await
                                 outLabelVolume = await resizeWithZeroPadding(outLabelVolume, num_of_slices, slice_height, slice_width, refVoxel,  boundVolSizeArr )
                                 console.log(" outLabelVolume final shape after resizing :  ", outLabelVolume.shape)
 
                                 let filterOutWithPreMask =  modelEntry.filterOutWithPreMask
                                   // To clean the skull area wrongly segmented in phase-2.
                                 if(pipeline1_out != null && opts.isBrainCropMaskBased && filterOutWithPreMask) {
-                                    outLabelVolume = outLabelVolume.mul(binarizeVolumeDataTensor(pipeline1_out))
+                                    let bin = binarizeVolumeDataTensor(pipeline1_out)
+                                    outLabelVolume = outLabelVolume.mul(bin)
                                 }
 
                                 startTime = performance.now()
                                 // Generate output volume or slices
                                 console.log("Generating correct output")
 
-                                //try {
+                                try {
                                     const img = new Uint32Array(outLabelVolume.dataSync())
                                     const Vshape = outLabelVolume.shape
                                     const Vtype = outLabelVolume.dtype
                                     tf.dispose(outLabelVolume)
                                     tf.engine().endScope()
                                     tf.engine().disposeVariables()
+                                    //???? await
+                                    //BINGO
                                     outimg = await generateOutputSlicesV2(img, Vshape, Vtype, num_of_slices, numSegClasses, slice_height, slice_width, modelEntry, opts, niftiImage)
                                     console.log(" Phase-2 num of tensors after generateOutputSlicesV2: " , tf.memory().numTensors )
-                                /*} catch (error) {
+                                } catch (error) {
 
                                         //-- Timing data to collect
                                         tf.engine().endScope()
@@ -1885,16 +1993,15 @@ async function inferenceFullVolumePhase2 (model, slices_3d, num_of_slices, slice
                                         statData["Extra_Err_Info"] = "Failed while generating output"
 
                                        if(opts.telemetryFlag) {
-                                            await submitTiming2GoogleSheet(statData)
+                                            submitTiming2GoogleSheet(statData, callbackUI)
                                        }
 
                                        return 0
-                                }*/
+                                }
 
                                 let Postprocess_t = ((performance.now() - startTime)/1000).toFixed(4)
 
-                                //? document.getElementById("progressBar").style.width = 0
-                                //webix.message.hide("waitMessage")
+
 
                                 //? $$("downloadBtn").enable()
                                 //? $$("segmentBtn").enable()
@@ -1912,15 +2019,15 @@ async function inferenceFullVolumePhase2 (model, slices_3d, num_of_slices, slice
                                 statData["Status"] = "OK"
 
                                 if(opts.telemetryFlag) {
-                                  await submitTiming2GoogleSheet(statData)
+                                  submitTiming2GoogleSheet(statData, callbackUI)
                                 }
-                                clearInterval(mytimer)
+                                clearInterval(timer)
                                 callbackImg(outimg, opts, modelEntry)
                                 callbackUI("Segmentation finished", 0)
                             }
                         i++
                      }, delay)
-        /*          } catch(err) {
+                  } catch(err) {
 
                         callbackUI(err.message, -1, err.message)
                         console.log(
@@ -1930,9 +2037,8 @@ async function inferenceFullVolumePhase2 (model, slices_3d, num_of_slices, slice
                         //? document.getElementById("webGl2Status").style.backgroundColor =  isWebGL2ContextLost() ? "Red" : "Green"
 
                         //? document.getElementById("memoryStatus").style.backgroundColor =  tf.memory().unreliable ? "Red" : "Green"
-                  }*/
+                  }
 //            })
-  return mytimer
 }
 
 async function inferenceFullVolumePhase1 (model, slices_3d, num_of_slices, slice_height, slice_width, isModelFullVol, modelEntry, statData, opts, callbackImg, callbackUI, niftiImage) {
@@ -1941,7 +2047,8 @@ async function inferenceFullVolumePhase1 (model, slices_3d, num_of_slices, slice
             // load pre-model for inference first, can be null if no pre-model such as GWM models
             if(modelEntry["preModelId"]) {
 
-                let preModel =  load_model(inferenceModelsList[ modelEntry["preModelId"] - 1]['path'] )
+                //let preModel = await load_model(inferenceModelsList[ modelEntry["preModelId"] - 1]['path'] )
+                let preModel =  await load_model(inferenceModelsList[ modelEntry["preModelId"] - 1].path);
                 let transpose = inferenceModelsList[ modelEntry["preModelId"]  - 1]["enableTranspose"]
                 let quantileNorm = inferenceModelsList[ modelEntry["preModelId"]  - 1]["enableQuantileNorm"]
                 let preModel_slices_3d = null
@@ -1974,7 +2081,8 @@ async function inferenceFullVolumePhase1 (model, slices_3d, num_of_slices, slice
 
                 statData["Brainchop_Ver"] = "PreModel_FV"  ;  // e.g. "PreModel_FV"
 
-                preModel.then(function (res) {
+                //preModel.then(function (res) {
+                let res = await preModel
 
                      try {
 
@@ -2031,8 +2139,8 @@ async function inferenceFullVolumePhase1 (model, slices_3d, num_of_slices, slice
                           statData["Input_Shape"] = JSON.stringify(preModel_input_shape)
                           statData["Output_Shape"] = JSON.stringify(preModelObject.output.shape)
                           statData["Channel_Last"] = isPreModelChannelLast
-                          statData["Model_Param"] = getModelNumParameters(preModelObject)
-                          statData["Model_Layers"] = getModelNumLayers(preModelObject)
+                          statData["Model_Param"] = await getModelNumParameters(preModelObject)
+                          statData["Model_Layers"] = await getModelNumLayers(preModelObject)
                           //? statData["Model"] = inferenceModelsList[ modelEntry["preModelId"] - 1]["modelName"]
                           //? statData["Extra_Info"] = inferenceModelsList[$$("selectModel").getValue() - 1]["modelName"]
 
@@ -2058,28 +2166,9 @@ async function inferenceFullVolumePhase1 (model, slices_3d, num_of_slices, slice
 
                                 } catch(err) {
 
-                                      if( err.message === "Failed to compile fragment shader.") {
-                                                      webix.confirm({
-                                                        title:"",
-                                                        ok:"Ok",
-                                                        cancel:"Cancel",
-                                                        type: "confirm-error",
-                                                        width: 500,
-                                                        text: "Context lost due to limited Memory available, please check current browser resouces in the toolbar and verified GPUs for each model"
-                                                      })
-                                                        .then(() => {
-                                                               //---
-                                                               $$("browserResourcesWindow").show()
-
-
-                                                      }).fail(() => {
-                                                               //---
-
-                                                      })
-
-                                      } else {
-                                          callbackUI(err.message, -1, err.message)
-                                      }
+                                      //? original code provided special dialog for fragment shader if( err.message === "Failed to compile fragment shader.")
+                                      callbackUI(err.message, -1, err.message)
+                                      
 
                                       window.clearInterval( timer )
                                       tf.engine().endScope()
@@ -2092,7 +2181,7 @@ async function inferenceFullVolumePhase1 (model, slices_3d, num_of_slices, slice
                                       statData["Extra_Err_Info"] = "PreModel Failed while model layer " + i + " apply"
 
                                       if(opts.telemetryFlag) {
-                                          await submitTiming2GoogleSheet(statData)
+                                          await submitTiming2GoogleSheet(statData, callbackUI)
                                       }
 
                                       return 0
@@ -2127,7 +2216,7 @@ async function inferenceFullVolumePhase1 (model, slices_3d, num_of_slices, slice
 
                                     try {
                                         console.log(" Try tf.argMax for fullVolume ..")
-                                        prediction_argmax = tf.argMax(curTensor[i], axis)
+                                        prediction_argmax = await  tf.argMax(curTensor[i], axis)
 
                                     } catch(err1) {
                                        // if channel last
@@ -2158,7 +2247,7 @@ async function inferenceFullVolumePhase1 (model, slices_3d, num_of_slices, slice
                                                     statData["Extra_Err_Info"] = "preModel prediction_argmax from argMaxLarge failed"
 
                                                    if(opts.telemetryFlag) {
-                                                      await submitTiming2GoogleSheet(statData)
+                                                      await submitTiming2GoogleSheet(statData, callbackUI)
                                                    }
 
                                                    return 0
@@ -2183,7 +2272,7 @@ async function inferenceFullVolumePhase1 (model, slices_3d, num_of_slices, slice
                                             statData["Extra_Err_Info"] = "preModel prediction_argmax from argMaxLarge not support yet channel first"
 
                                            if(opts.telemetryFlag) {
-                                                await submitTiming2GoogleSheet(statData)
+                                                await submitTiming2GoogleSheet(statData, callbackUI)
                                            }
 
                                            return 0
@@ -2201,7 +2290,7 @@ async function inferenceFullVolumePhase1 (model, slices_3d, num_of_slices, slice
                                     tf.dispose(curTensor[i])
 
                                     console.log(" Pre-model find array max ")
-                                    let curBatchMaxLabel =  await findArrayMax(Array.from(prediction_argmax.dataSync()))
+                                    let curBatchMaxLabel = await findArrayMax(Array.from(prediction_argmax.dataSync()))
 
                                     if( maxLabelPredicted < curBatchMaxLabel ) {
                                           maxLabelPredicted = curBatchMaxLabel
@@ -2213,29 +2302,24 @@ async function inferenceFullVolumePhase1 (model, slices_3d, num_of_slices, slice
                                     statData["Actual_Labels"] = numSegClasses
                                     statData["Expect_Labels"] = expected_Num_labels
                                     statData["NumLabels_Match"] = numSegClasses == expected_Num_labels? true : false
-
+                                    
+                                    
                                     //-- Transpose back to fit Papaya display settings
-                                    let outLabelVolume = prediction_argmax.reshape([num_of_slices, slice_height, slice_width])
+                                    let outLabelVolume = await prediction_argmax.reshape([num_of_slices, slice_height, slice_width])
                                     tf.dispose(prediction_argmax)
-
                                     // Transpose MRI data to be match pytorch/keras input output
                                     if(transpose) {
                                        console.log("Pre-model outLabelVolume transposed")
                                        outLabelVolume = outLabelVolume.transpose()
                                     }
-
-
                                     let startTime = performance.now()
                                     // Generate output volume or slices
                                     console.log("Generating pre-model output")
-
+                                    let slices_3d_mask
                                     try {
-                                        slices_3d_mask = tf.tidy(() => {
-                                             let unstackOutVolumeTensor = tf.unstack(outLabelVolume)
-                                             tf.dispose(outLabelVolume)
-                                             return generateBrainMask(unstackOutVolumeTensor, num_of_slices, slice_height, slice_width)
-                                        })
-
+                                        let unstackOutVolumeTensor = await tf.unstack(outLabelVolume);
+                                        slices_3d_mask = await generateBrainMask(unstackOutVolumeTensor, num_of_slices, slice_height, slice_width, modelEntry, opts, callbackUI, callbackImg);
+                                        await tf.dispose(outLabelVolume);
                                         console.log(" Phase-1 num of tensors after generateBrainMask: " , tf.memory().numTensors )
 
                                     } catch (error) {
@@ -2254,15 +2338,12 @@ async function inferenceFullVolumePhase1 (model, slices_3d, num_of_slices, slice
                                             statData["Extra_Err_Info"] = "Pre-model failed while generating output"
 
                                            if(opts.telemetryFlag) {
-                                                await submitTiming2GoogleSheet(statData)
+                                                await submitTiming2GoogleSheet(statData, callbackUI)
                                            }
 
                                            return 0
                                     }
-
                                     let Postprocess_t = ((performance.now() - startTime)/1000).toFixed(4)
-
-
                                     console.log("Pre-model processing the whole brain volume in tfjs tooks for multi-class output mask : ",
                                                             ((performance.now()-inferenceStartTime)/1000).toFixed(4) + "  Seconds")
 
@@ -2273,14 +2354,14 @@ async function inferenceFullVolumePhase1 (model, slices_3d, num_of_slices, slice
                                     statData["Status"] = "OK"
 
                                     if(opts.telemetryFlag) {
-                                          await submitTiming2GoogleSheet(statData)
+                                          await submitTiming2GoogleSheet(statData, callbackUI)
                                     }
 
 
                                     if(slices_3d_mask == null) {
 
-                                       console.log("slice_3d_mask failed ...")
-                                       webix.message("slice_3d_mask failed ...")
+                                       let msg = "slice_3d_mask failed ..."
+                                       callbackUI(msg, -1, msg)
                                        return 0
 
                                     } else {
@@ -2290,6 +2371,7 @@ async function inferenceFullVolumePhase1 (model, slices_3d, num_of_slices, slice
                                        // --mask_3d = slices_3d_mask.greater([0]).asType('bool')
                                        // --slices_3d_mask.dispose()
 
+
                                        if(isModelFullVol) {
 
                                             if(modelEntry["enableSeqConv"]) {
@@ -2297,7 +2379,7 @@ async function inferenceFullVolumePhase1 (model, slices_3d, num_of_slices, slice
                                                  // Non-Atlas model (e.g. GWM) needs sequential convolution layer.
                                                  // Sequential convolution layer to be used after cropping - slow but reliable on most machines
                                                  console.log("------ Mask Cropping & Seq Convoluton ------")
-                                                 await inferenceFullVolumeSeqCovLayerPhase2(opts, modelEntry, model, slices_3d, num_of_slices, slice_height, slice_width, slices_3d_mask, modelEntry, callbackUI, statData)
+                                                 await inferenceFullVolumeSeqCovLayerPhase2(opts, modelEntry, model, slices_3d, num_of_slices, slice_height, slice_width, slices_3d_mask, callbackUI, callbackImg, statData, niftiImage)
                                                  // inferenceFullVolumeSeqCovLayerPhase2(model, slices_3d.transpose(), num_of_slices, slice_height, slice_width, slices_3d_mask)
                                             } else {
                                                  // Mask cropping BUT no seq conv
@@ -2332,7 +2414,7 @@ async function inferenceFullVolumePhase1 (model, slices_3d, num_of_slices, slice
 
                             //document.getElementById("memoryStatus").style.backgroundColor =  tf.memory().unreliable ? "Red" : "Green"
                       }
-                })
+                //})
 
            //-- if(...)  end
            } else { // No preModel
@@ -2349,7 +2431,7 @@ async function inferenceFullVolumePhase1 (model, slices_3d, num_of_slices, slice
                          // Non-Atlas model (e.g. GWM) needs sequential convolution layer.
                          // Sequential convolution layer to be used after cropping - slow but reliable on most machines
                          console.log("------ Seq Convoluton ------")
-                         await inferenceFullVolumeSeqCovLayerPhase2(opts, modelEntry, model, slices_3d, num_of_slices, slice_height, slice_width, null, callbackUI, statData)
+                         await inferenceFullVolumeSeqCovLayerPhase2(opts, modelEntry, model, slices_3d, num_of_slices, slice_height, slice_width, null, callbackUI, callbackImg, statData, niftiImage)
                     } else {
                          // Voxel cropping BUT no seq conv
                          let outimg = await inferenceFullVolumePhase2(model, slices_3d, num_of_slices, slice_height, slice_width, null, modelEntry, statData, opts, callbackImg, callbackUI, niftiImage)
@@ -2376,7 +2458,7 @@ async function enableProductionMode (textureF16Flag = true) {
   //-- Put ready after sets above
   await tf.ready()
   //-- Printing output
-  console.log(tf.env().flags)
+  console.log("tf env() flags :", tf.env().flags)
   console.log("tf env() features :", tf.env().features)
   console.log("tf env total features: ", Object.keys(tf.env().features).length)
   console.log(tf.getBackend())
@@ -2456,6 +2538,7 @@ async function getAllSlicesData1D (num_of_slices, niftiHeader, niftiImage) {
 }
 
 async function runInference(opts, modelEntry, niftiHeader, niftiImage, callbackImg, callbackUI) {
+  callbackUI("Segmentation started", 0)
   let startTime = performance.now()
   const batchSize = opts.batchSize
   const numOfChan = opts.numOfChan
@@ -2659,13 +2742,4 @@ async function runInference(opts, modelEntry, niftiHeader, niftiImage, callbackI
          }
       }
   }
-}
-
-//       id: 10,
-//       type: "Brain_Extraction",
-//
-//opts, modelEntry, niftiHeader, niftiImage, callbackImg, callbackUI
-function chop(modelEntry, niftiHeader, niftiImage, callbackImg, callbackUI) { //for node.js which does not have a GUI alert
-  let opts = gOpts
-  runInference(gOpts, modelEntry, niftiHeader, niftiImage, callbackImg, callbackUI)
 }

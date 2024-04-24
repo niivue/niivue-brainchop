@@ -1,5 +1,5 @@
 import { Niivue } from "@niivue/niivue"
-import { chop, inferenceModelsList } from "./brainchop.js"
+import { runInference, inferenceModelsList, brainChopOpts } from "./brainchop.js"
 
 async function main() {
   let defaults = {
@@ -36,7 +36,8 @@ async function main() {
   modelSelect.onchange = async function () {
     await ensureConformed()
     let model = inferenceModelsList[this.selectedIndex]
-    chop(model, nv1.volumes[0].hdr, nv1.volumes[0].img, callbackImg, callbackUI)
+    let opts = brainChopOpts
+    runInference(opts, model, nv1.volumes[0].hdr, nv1.volumes[0].img, callbackImg, callbackUI)
   }
 
   saveBtn.onclick = function () {
