@@ -57,8 +57,12 @@ async function main() {
     overlayVolume.img = new Uint8Array(img)
     let colormap = opts.atlasSelectedColorTable.toLowerCase()
     const cmaps = nv1.colormaps()
-    if (!cmaps.includes(colormap))
-      colormap = 'actc'
+    if (!cmaps.includes(colormap)) {
+          colormap = 'actc'
+          if (modelEntry.type === 'Atlas') {
+            colormap = 'random'
+          }
+    }
     overlayVolume.colormap = colormap
     overlayVolume.opacity = opacitySlider.value / 255
     nv1.addVolume(overlayVolume)
