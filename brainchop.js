@@ -606,13 +606,23 @@ async function load_model(modelUrl) {
   return await tf.loadLayersModel(modelUrl)
 }
 
-async function getSliceData1D(sliceIdx, niftiHeader, niftiImage) {
+async function getAllSlices2D(allSlices, slice_height, slice_width) {
+  const allSlices_2D = []
+  for (let sliceIdx = 0; sliceIdx < allSlices.length; sliceIdx++) {
+    allSlices_2D.push(tf.tensor(allSlices[sliceIdx], [slice_height, slice_width]))
+  }
+  return allSlices_2D
+}
+
+async function getSlices3D(allSlices_2D) {
+  return tf.stack(allSlices_2D)
+}
+
+async function getAllSlicesData1D(num_of_slices, niftiHeader, niftiImage) {
   // Get nifti dimensions
   const cols = niftiHeader.dims[1] // Slice width
   const rows = niftiHeader.dims[2] // Slice height
-
   let typedData
-
   if (niftiHeader.datatypeCode === 2) {
     // enum from nvimage/utils DT_UINT8 = 2
     typedData = new Uint8Array(niftiImage)
@@ -640,39 +650,19 @@ async function getSliceData1D(sliceIdx, niftiHeader, niftiImage) {
   } else {
     return
   }
-  // offset to specified slice
-  const sliceSize = cols * rows
-  const sliceOffset = sliceSize * sliceIdx
-  const data1DimArr = []
-  // Draw pixels
-  for (let row = 0; row < rows; row++) {
-    const rowOffset = row * cols
-    for (let col = 0; col < cols; col++) {
-      const offset = sliceOffset + rowOffset + col
-      const value = typedData[offset]
-      // Create 1Dim Array of pixel value, this 1 dim represents one channel
-      data1DimArr[rowOffset + col] = value & 0xff
-    }
-  }
-  return data1DimArr
-}
-
-async function getAllSlices2D(allSlices, slice_height, slice_width) {
-  const allSlices_2D = []
-  for (let sliceIdx = 0; sliceIdx < allSlices.length; sliceIdx++) {
-    allSlices_2D.push(tf.tensor(allSlices[sliceIdx], [slice_height, slice_width]))
-  }
-  return allSlices_2D
-}
-
-async function getSlices3D(allSlices_2D) {
-  return tf.stack(allSlices_2D)
-}
-
-async function getAllSlicesData1D(num_of_slices, niftiHeader, niftiImage) {
   const allSlices = []
-  for (let sliceIdx = 0; sliceIdx < num_of_slices; sliceIdx++) {
-    const slice = await getSliceData1D(sliceIdx, niftiHeader, niftiImage)
+  let offset3D = 0
+  // Draw pixels
+  for (let slice = 0; slice < num_of_slices; slice++) {
+    const slice = new Array(rows * cols)
+    let offset2D = 0
+    for (let row = 0; row < rows; row++) {
+      for (let col = 0; col < cols; col++) {
+        const value = typedData[offset3D++]
+        // Create 1Dim Array of pixel value, this 1 dim represents one channel
+        slice[offset2D++] = value & 0xff
+      }
+    }
     allSlices.push(slice)
   }
   return allSlices
@@ -1009,13 +999,15 @@ async function generateBrainMask(
   } else {
     console.log('Phase-1 Post processing disabled ... ')
   }
-
-  const allOutputSlices3DCC1DimArray = []
-  // Use this conversion to download output slices as nii file. Takes around 0.5 s
+  // Use this conversion to download output slices as nii file. Takes around 30 ms
+  // does not use `push` to avoid stack overflows. In future: consider .set() with typed arrays
+  const allOutputSlices3DCC1DimArray = new Array(allOutputSlices3DCC[0].length * allOutputSlices3DCC.length)
+  let index = 0;
   for (let sliceIdx = 0; sliceIdx < allOutputSlices3DCC.length; sliceIdx++) {
-    allOutputSlices3DCC1DimArray.push.apply(allOutputSlices3DCC1DimArray, allOutputSlices3DCC[sliceIdx])
+      for (let i = 0; i < allOutputSlices3DCC[sliceIdx].length; i++) {
+          allOutputSlices3DCC1DimArray[index++] = allOutputSlices3DCC[sliceIdx][i];
+      }
   }
-
   let brainOut = []
 
   if (opts.isBrainCropMaskBased) {
