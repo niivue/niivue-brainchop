@@ -3,7 +3,7 @@ import { BWLabeler } from './bwlabels.js'
 export { runInference, inferenceModelsList, brainChopOpts }
 
 const brainChopOpts = {
-  // General  settings for input shape  [batchSize, batch_D, batch_H, batch_W, numOfChan]
+  // General settings for input shape [batchSize, batch_D, batch_H, batch_W, numOfChan]
   batchSize: 1, // How many batches are used during each inference iteration
   numOfChan: 1, // num of channel of the input shape
   isColorEnable: true, // If false, grey scale will enabled
@@ -398,11 +398,11 @@ const inferenceModelsList = [
 ] // inferenceModelsList
 
 function wcallbackUI(message = "", progressFrac = -1, modalMessage = "") {
-  self.postMessage({cmd : "ui", message : message, progressFrac: progressFrac, modalMessage: modalMessage});
+  self.postMessage({cmd : "ui", message : message, progressFrac: progressFrac, modalMessage: modalMessage})
 }
 
 function wcallbackImg(img, opts, modelEntry) {
-  self.postMessage({cmd : "img", img : img, opts: opts, modelEntry: modelEntry});
+  self.postMessage({cmd : "img", img : img, opts: opts, modelEntry: modelEntry})
 }
 
 async function checkZero(timeValue) {
@@ -566,11 +566,10 @@ async function submitTiming2GoogleSheet(dataObj, callbackUI) {
     const msg = 'Telemetry not yet supported'
     callbackUI(msg, -1, msg)
     console.log(dataObj)
-
     /*
     // -- Fill form with data to submit
     Object.keys(dataObj).forEach(dataKey =>{
-         document.getElementById(dataKey).value = dataObj[dataKey];
+         document.getElementById(dataKey).value = dataObj[dataKey]
     })
     //-- Settings of submission
     const scriptURL = 'https://script.google.com/macros/s/AKfycbwn-Ix6IVGOwUSU1VBU8hFcABT9PqwCwN90UxfK_fXp5CEfxvIoQHZXs2XQRZQo_N8I/exec'
@@ -583,7 +582,7 @@ async function submitTiming2GoogleSheet(dataObj, callbackUI) {
             .catch(error => console.error('Error!', error.message))
     })
     //-- Submit the form
-    document.getElementById("SubmitStatisticalData").click();
+    document.getElementById("SubmitStatisticalData").click()
     */
   } else {
     console.log(' Offline Mode ')
@@ -751,7 +750,7 @@ async function inferenceFullVolumeSeqCovLayer(
   slice_height,
   slice_width
 ) {
-  console.log('>>>>>>inferenceFullVolumeSeqCovLayer() is not dead code?')
+  callbackUI(msg, -1, 'inferenceFullVolumeSeqCovLayer() is not dead code?')
 }
 
 async function inferenceFullVolume(
@@ -763,145 +762,45 @@ async function inferenceFullVolume(
   slice_height,
   slice_width
 ) {
-  console.log('>>>>>>inferenceFullVolume() is not dead code?')
+  wcallbackUI('',-1, 'inferenceFullVolume() is not dead code?')
 }
 
 async function inferenceSubVolumes(model, slices_3d, num_of_slices, slice_height, slice_width, pipeline1_out = null) {
-  console.log('>>>>>>inferenceSubVolumes() is not dead code?')
+  wcallbackUI('', -1, 'inferenceSubVolumes() is not dead code?')
 }
 
 async function tensor2LightBuffer(tensor, dtype) {
-  console.log('>>>>>>tensor2LightBuffer() is not dead code?')
-  // return new Buffer(tensor.shape, dtype, Array.from(tensor.dataSync()) );
+  wcallbackUI('', -1, 'tensor2LightBuffer() is not dead code?')
+  // return new Buffer(tensor.shape, dtype, Array.from(tensor.dataSync()) )
 }
 
-async function draw3dObjBoundingVolume(unstackOutVolumeTensor) {
-  console.log('>>>>>>draw3dObjBoundingVolume() is not dead code?')
-  /*
-  console.log("Plot cropped  volume shape ... ");
-  // Convert all slices into 1 Dim array to download
-  
-  let allOutputSlices3DCC = [];
-  let allOutputSlices3DContours = [];
-  
-  
+async function draw3dObjBoundingVolume(unstackOutVolumeTensor, opts, modelEntry) {
+  //wcallbackUI('', -1, 'draw3dObjBoundingVolume() is not dead code?')
+  let allOutputSlices3DCC = []
+  let allOutputSlices3DContours = []
+
   // dataSync() using to flatten array. Takes around 1.5 s
   for(let sliceTensorIdx = 0; sliceTensorIdx < unstackOutVolumeTensor.length; sliceTensorIdx++ ) {
-    allOutputSlices3DCC[sliceTensorIdx] = Array.from(unstackOutVolumeTensor[sliceTensorIdx].dataSync());
+        allOutputSlices3DCC[sliceTensorIdx] = Array.from(unstackOutVolumeTensor[sliceTensorIdx].dataSync())
   }
-  
-  // if(false) { // Enable contour for overlay option
-  //     // Remove noisy regions using 3d CC
-  //     let sliceWidth = niftiHeader.dims[1];
-  //     let sliceHeight = niftiHeader.dims[2];
-  //     allOutputSlices3DCC = findVolumeContours(allOutputSlices3DCC, sliceHeight, sliceWidth, 2 );
-  // }
-  
-  let allOutputSlices3DCC1DimArray = [];
-  // Use this conversion to download output slices as nii file. Takes around 0.5 s
-  for(let sliceIdx = 0; sliceIdx < allOutputSlices3DCC.length; sliceIdx++ ) {
-    allOutputSlices3DCC1DimArray.push.apply(allOutputSlices3DCC1DimArray, allOutputSlices3DCC[sliceIdx]);
+
+  // Use this conversion to download output slices as nii file. Takes around 30 ms
+  // does not use `push` to avoid stack overflows. In future: consider .set() with typed arrays
+  const allOutputSlices3DCC1DimArray = new Array(allOutputSlices3DCC[0].length * allOutputSlices3DCC.length)
+  let index = 0
+  for (let sliceIdx = 0; sliceIdx < allOutputSlices3DCC.length; sliceIdx++) {
+      for (let i = 0; i < allOutputSlices3DCC[sliceIdx].length; i++) {
+          allOutputSlices3DCC1DimArray[index++] = allOutputSlices3DCC[sliceIdx][i]
+      }
   }
-  
   console.log("Done with allOutputSlices3DCC1DimArray ")
-  
-  let  brainOut = [];
-  
-  
-  let brainMaskTensor1d =  binarizeVolumeDataTensor(tf.tensor1d(allOutputSlices3DCC1DimArray));
-  brainOut = Array.from(brainMaskTensor1d.dataSync());
-  
-  
-  // labelArrayBuffer = createNiftiOutArrayBuffer(rawNiftiData, brainExtractionData1DimArr);
-  let labelArrayBuffer = createNiftiOutArrayBuffer(rawNiftiData, brainOut);
-  
-  TODO Papaa specific code? 
-  if(true) { // flag to not draw for now
-    if(opts.isColorEnable) {
-        let blob = new Blob([labelArrayBuffer], {type: "application/octet-binary;charset=utf-8"});
-        let file = new File([blob], "temp.nii");
-        params_label["files"] = [file];
-        params_label[file["name"]] = {lut: "Grayscale", interpolation: false};
-
-    } else {
-        params_label["binaryImages"] = [labelArrayBuffer];
-    }
-
-    // Set the view of container-2 as container-1
-    params_label["mainView"] = papayaContainers[0].viewer.mainImage.sliceDirection == 1? "axial" :
-                               papayaContainers[0].viewer.mainImage.sliceDirection == 2? "coronal" : "sagittal";
-
-
-    papaya.Container.resetViewer(1, params_label);
-    papayaContainers[1].viewer.screenVolumes[0].alpha = 0.2;  // 0 to 1 screenVolumes[0] is first image loaded in Labels viewer
-    papayaContainers[1].viewer.drawViewer(true, false);
-
-
-    // To sync swap view button
-    document.getElementById(PAPAYA_CONTROL_MAIN_SWAP_BUTTON_CSS + papayaContainers[0].containerIndex).addEventListener("click", function(){
-          papayaContainers[1].viewer.rotateViews()
-
-    })
-
-    document.getElementById(PAPAYA_CONTROL_MAIN_SWAP_BUTTON_CSS + papayaContainers[1].containerIndex).addEventListener("click", function(){
-          papayaContainers[0].viewer.rotateViews()
-
-      })
-    
-  }
-  */
+  let brainMaskTensor1d = await binarizeVolumeDataTensor(tf.tensor1d(allOutputSlices3DCC1DimArray))
+  let brainOut = Array.from(brainMaskTensor1d.dataSync())
+  wcallbackImg(brainOut, opts, modelEntry)
 }
 
 async function argMaxLarge(outVolumeBuffer, num_of_slices, slice_height, slice_width, numOfClasses, dtype = 'float32') {
-  console.log('>>>>>>argMaxLarge() is not dead code?')
-  /*
-  if( findMinNumOfArrBufs(num_of_slices, slice_height, slice_width, numOfClasses, dtype) == 1) {
-
-     // console.log("Convert output tensor to buffer");
-    // reshape modelOutTensor.shape  : [ 1, 256, 256, 256, 3 ] to [ 256, 256, 256, 3 ]
-    //-- let outVolumeBuffer = tensor2Buffer(modelOutTensor.relu().reshape([num_of_slices, slice_height, slice_width, numOfClasses]));
-
-    //-- let  outVolumeBuffer = tensor2Buffer(modelOutTensor.reshape([num_of_slices, slice_height, slice_width, numOfClasses]));
-    //-- let  outVolumeBuffer = tensor2LightBuffer(modelOutTensor.reshape([num_of_slices, slice_height, slice_width, numOfClasses]), dtype);
-
-    console.log("Start argMaxLarge for  buffer  with last axis -1")
-
-    let outBuffer = tf.buffer([num_of_slices, slice_height, slice_width ], dtype=tf.float32);
-
-    for(let depthIdx = 0; depthIdx < num_of_slices; depthIdx += 1) {
-        for(let rowIdx = 0; rowIdx < slice_height; rowIdx += 1) {
-            for(let colIdx = 0; colIdx < slice_width; colIdx += 1) {
-                // index of buffer with max Freq or max number so the index of that buffer is the right concensus label
-                let indexOfMaxVotedBuffer = -1;
-                // let maxVoxelValue = -Infinity;
-                let maxVoxelValue = -1000000;
-
-                for(let bufferIdx = 0; bufferIdx < numOfClasses; bufferIdx += 1) {
-                    //Requested out of range element at 1,0,0,0.   Buffer shape=1,256,256,256,3
-                    let voxelValue = outVolumeBuffer.get(depthIdx, rowIdx, colIdx, bufferIdx );
-
-                    if(maxVoxelValue <= voxelValue) {
-                          maxVoxelValue = voxelValue;
-                          indexOfMaxVotedBuffer = bufferIdx;
-                    }
-                }
-
-                outBuffer.set(indexOfMaxVotedBuffer, depthIdx, rowIdx, colIdx);
-
-            }
-        }
-    }
-
-    console.log("argMaxLarge for buffer ..Done");
-
-    return outBuffer.toTensor();
-
-  } else {
-     console.log(" Terminated due to browser memory limitation (TODO: callbackUI)");
-     console.log("argMaxLarge needs buffer division .. ");
-     return 0;
-  }
-  */
+  wcallbackUI('', -1, 'argMaxLarge() is not dead code?')
 }
 
 async function addZeroPaddingTo3dTensor(tensor3d, rowPadArr = [1, 1], colPadArr = [1, 1], depthPadArr = [1, 1]) {
@@ -956,13 +855,13 @@ async function applyMriThreshold(tensor, percentage) {
 
     // Thresholding (assuming background has very low values compared to the head)
     const mask = dataForProcessing.greater(threshold[0])
-    // -- const denoisedMriData = dataForProcessing.mul(mask);
+    // -- const denoisedMriData = dataForProcessing.mul(mask)
 
     // No need to  manually dispose dataForProcessing and mask, as tf.tidy() will dispose them auto.
     return mask
   })
 
-  // -- return denoisedMriData;
+  // -- return denoisedMriData
 }
 
 async function binarizeVolumeDataTensor(volumeDataTensor) {
@@ -980,6 +879,8 @@ async function generateBrainMask(
   opts,
   callbackUI,
   callbackImg,
+  niftiHeader, 
+  niftiImage,
   isFinalImage = true
 ) {
   console.log('Generate Brain Masking ... ')
@@ -993,7 +894,7 @@ async function generateBrainMask(
     allOutputSlices3DCC[sliceTensorIdx] = Array.from(unstackOutVolumeTensor[sliceTensorIdx].dataSync())
   }
   const isPreModelPostProcessEnable = modelEntry.preModelPostProcess
-  // let isPreModelPostProcessEnable = inferenceModelsList[$$("selectModel").getValue() - 1]["preModelPostProcess"];
+  // let isPreModelPostProcessEnable = inferenceModelsList[$$("selectModel").getValue() - 1]["preModelPostProcess"]
 
   if (isPreModelPostProcessEnable) {
     console.log('Phase-1 Post processing enabled ... ')
@@ -1012,10 +913,10 @@ async function generateBrainMask(
   // Use this conversion to download output slices as nii file. Takes around 30 ms
   // does not use `push` to avoid stack overflows. In future: consider .set() with typed arrays
   const allOutputSlices3DCC1DimArray = new Array(allOutputSlices3DCC[0].length * allOutputSlices3DCC.length)
-  let index = 0;
+  let index = 0
   for (let sliceIdx = 0; sliceIdx < allOutputSlices3DCC.length; sliceIdx++) {
       for (let i = 0; i < allOutputSlices3DCC[sliceIdx].length; i++) {
-          allOutputSlices3DCC1DimArray[index++] = allOutputSlices3DCC[sliceIdx][i];
+          allOutputSlices3DCC1DimArray[index++] = allOutputSlices3DCC[sliceIdx][i]
       }
   }
   let brainOut = []
@@ -1023,23 +924,21 @@ async function generateBrainMask(
     //  Mask-based
     const brainMaskTensor1d = await binarizeVolumeDataTensor(tf.tensor1d(allOutputSlices3DCC1DimArray))
     brainOut = Array.from(brainMaskTensor1d.dataSync())
-  } else {
-    //  Brain tissue
-    console.log('>>>>>>getAllSlicesData1D() is not dead code? niftiHeader and niftiImage required by getAllSlicesData1D')
-    /*const allSlices = getAllSlicesData1D(num_of_slices, niftiHeader, niftiImage)
-    for (let sliceIdx = 0; sliceIdx < allOutputSlices3DCC.length; sliceIdx++) {
-      for (let pixelIdx = 0; pixelIdx < slice_height * slice_width; pixelIdx++) {
-        // Filter smaller regions original MRI data
-        if (allOutputSlices3DCC[sliceIdx][pixelIdx] === 0) {
-          allSlices[sliceIdx][pixelIdx] = 0
-        }
-      }
-
-      brainOut.push.apply(brainOut, allSlices[sliceIdx])
-    }*/
+  } else { //  Brain tissue
+    let allSlices = await getAllSlicesData1D(num_of_slices, niftiHeader, niftiImage)
+    brainOut = new Array(niftiHeader.dims[1] * niftiHeader.dims[2] * niftiHeader.dims[3])
+    let idx = 0
+    for(let sliceIdx = 0; sliceIdx < allOutputSlices3DCC.length; sliceIdx++ ) {
+      for(let pixelIdx = 0; pixelIdx < (slice_height * slice_width); pixelIdx++) {
+           //Filter smaller regions original MRI data
+           if(allOutputSlices3DCC[sliceIdx][pixelIdx] == 0) {
+              allSlices[sliceIdx][pixelIdx] = 0
+           }
+           brainOut[idx++] = allSlices[sliceIdx][pixelIdx]
+       }
+    }
   }
-  if (isFinalImage) {//all done
-    console.log(">>>>>>>>>>>>>>>>>>>>")
+  if (isFinalImage || opts.showPhase1Output) {//all done
     callbackImg(brainOut, opts, modelEntry)
   }
   return tf.tensor(brainOut, [num_of_slices, slice_height, slice_width])
@@ -1223,7 +1122,7 @@ class SequentialConvLayer {
     // Important to avoid "undefined" class var members inside the timer.
     // "this" has another meaning inside the timer.
 
-    // document.getElementById("progressBarChild").parentElement.style.visibility = "visible";
+    // document.getElementById("progressBarChild").parentElement.style.visibility = "visible"
 
     return new Promise((resolve) => {
       const startTime = performance.now()
@@ -1242,7 +1141,7 @@ class SequentialConvLayer {
       // -- e.g. outC.shape  [256,256,256]
       let chIdx = 0
 
-      // console.log("---------------------------------------------------------");
+      // console.log("---------------------------------------------------------")
       console.log(' channel loop')
 
       const seqTimer = setInterval(async function () {
@@ -1273,7 +1172,7 @@ class SequentialConvLayer {
           return [newoutC, newoutB]
         })
 
-        // -- await showMemStatus(chIdx, self.outChannels);
+        // -- await showMemStatus(chIdx, self.outChannels)
 
         const memoryInfo1 = tf.memory()
         console.log(`| Number of Tensors: ${memoryInfo1.numTensors}`)
@@ -1302,13 +1201,13 @@ class SequentialConvLayer {
         outC = tf.keep(result[0])
         outB = tf.keep(result[1])
         // // Assign the new values to outC and outB
-        // outC = result[0];
-        // outB = result[1];
+        // outC = result[0]
+        // outB = result[1]
         tf.engine().endScope()
 
         if (chIdx === self.outChannels - 1) {
           clearInterval(seqTimer)
-          // document.getElementById("progressBarChild").style.width = 0 + "%";
+          // document.getElementById("progressBarChild").style.width = 0 + "%"
           tf.dispose(outB)
           const endTime = performance.now()
           const executionTime = endTime - startTime
@@ -1333,11 +1232,11 @@ class SequentialConvLayer {
           outC = tf.tensor(outCdata, outCShape)
           outB = tf.tensor(outBdata, outBShape)
 
-          // document.getElementById("progressBarChild").style.width = (chIdx + 1) * 100 / self.outChannels + "%";
+          // document.getElementById("progressBarChild").style.width = (chIdx + 1) * 100 / self.outChannels + "%"
         }
 
         // Artificially introduce a pause to allow for garbage collection to catch up
-        await new Promise((resolve) => setTimeout(resolve, 300))
+        await new Promise((resolve) => setTimeout(resolve, 100))
       }, 0)
     })
   }
@@ -1388,16 +1287,16 @@ async function generateOutputSlicesV2(
       for (let i = 0; i < allOutputSlices3DCC1DimArray.length; i++) {
         brainMask[i] = allOutputSlices3DCC1DimArray[i] !== 0 ? 1 : 0
       }
-      // labelArrayBuffer = createNiftiOutArrayBuffer(rawNiftiData, brainMask);
-      // allOutputSlices3DCC1DimArray = brainMask;
-      // --labelsHistogramMap = null;
-      // maskBrainExtraction = true;
+      // labelArrayBuffer = createNiftiOutArrayBuffer(rawNiftiData, brainMask)
+      // allOutputSlices3DCC1DimArray = brainMask
+      // --labelsHistogramMap = null
+      // maskBrainExtraction = true
       return brainMask
-      // break;
+      // break
     }
     case 'Brain_Extraction': {
       const maskedData = new Uint8Array(allOutputSlices3DCC1DimArray.length)
-      // const brainData = nifti2data(rawNiftiData);
+      // const brainData = nifti2data(rawNiftiData)
 
       for (let i = 0; i < allOutputSlices3DCC1DimArray.length; i++) {
         // Create the mask - 1 where the value is non-zero, 0 where it is zero.
@@ -1405,15 +1304,15 @@ async function generateOutputSlicesV2(
         // Apply the mask to the data - multiply by the mask value.
         maskedData[i] = niftiImage[i] * maskValue
       }
-      // labelArrayBuffer = createNiftiOutArrayBuffer(rawNiftiData, maskedData);
+      // labelArrayBuffer = createNiftiOutArrayBuffer(rawNiftiData, maskedData)
 
       // Update `allOutputSlices3DCC1DimArray` if needed.
-      // allOutputSlices3DCC1DimArray = maskedData;
+      // allOutputSlices3DCC1DimArray = maskedData
 
       // Other operations...
-      // maskBrainExtraction = true;
+      // maskBrainExtraction = true
       return maskedData
-      // break;
+      // break
     }
   }
 
@@ -1467,7 +1366,7 @@ async function inferenceFullVolumeSeqCovLayerPhase2(
     }
   } else {
     mask_3d = await pipeline1_out.greater([0]).asType('bool')
-    // -- pipeline1_out.dispose();
+    // -- pipeline1_out.dispose()
   }
 
   console.log(' mask_3d shape :  ', mask_3d.shape)
@@ -1540,7 +1439,7 @@ async function inferenceFullVolumeSeqCovLayerPhase2(
     testVol = await resizeWithZeroPadding(testVol, num_of_slices, slice_height, slice_width, refVoxel, boundVolSizeArr)
     console.log(' outLabelVolume final shape after resizing :  ', testVol.shape)
 
-    draw3dObjBoundingVolume(tf.unstack(testVol))
+    draw3dObjBoundingVolume(tf.unstack(testVol), opts, modelEntry)
     testVol.dispose()
 
     return 0
@@ -1624,9 +1523,9 @@ async function inferenceFullVolumeSeqCovLayerPhase2(
 
     const curTensor = []
     curTensor[0] = await cropped_slices_3d_w_pad.reshape(adjusted_input_shape)
-    // console.log("curTensor[0] :", curTensor[0].dataSync());
+    // console.log("curTensor[0] :", curTensor[0].dataSync())
 
-    // let curProgBar = parseInt(document.getElementById("progressBar").style.width);
+    // let curProgBar = parseInt(document.getElementById("progressBar").style.width)
 
     const timer = setInterval(async function () {
       try {
@@ -1645,13 +1544,13 @@ async function inferenceFullVolumeSeqCovLayerPhase2(
         }
 
         // // Log memory usage
-        // const memoryInfo = tf.memory();
-        // console.log(`Iteration ${i}:`);
-        // console.log(`Number of Tensors: ${memoryInfo.numTensors}`);
-        // console.log(`Number of Data Buffers: ${memoryInfo.numDataBuffers}`);
-        // console.log(`Bytes In Use: ${memoryInfo.numBytes}`);
-        // console.log(`Megabytes In Use: ${(memoryInfo.numBytes / 1048576).toFixed(3)} MB`);
-        // console.log(`Unreliable: ${memoryInfo.unreliable}`);
+        // const memoryInfo = tf.memory()
+        // console.log(`Iteration ${i}:`)
+        // console.log(`Number of Tensors: ${memoryInfo.numTensors}`)
+        // console.log(`Number of Data Buffers: ${memoryInfo.numDataBuffers}`)
+        // console.log(`Bytes In Use: ${memoryInfo.numBytes}`)
+        // console.log(`Megabytes In Use: ${(memoryInfo.numBytes / 1048576).toFixed(3)} MB`)
+        // console.log(`Unreliable: ${memoryInfo.unreliable}`)
 
         tf.dispose(curTensor[i - 1])
       } catch (err) {
@@ -1695,7 +1594,7 @@ async function inferenceFullVolumeSeqCovLayerPhase2(
         // The second parameter is important for memory,
         // the larger it is, the more memory it uses
         // it was 8, but I set it to 3, got a different error
-        // let seqConvLayer = new SequentialConvLayer(res, 10, isChannelLast);
+        // let seqConvLayer = new SequentialConvLayer(res, 10, isChannelLast)
         const seqConvLayer = await new SequentialConvLayer(res, 10, isChannelLast, callbackUI)
 
         // Apply the last output tensor to the seq. instance
@@ -1706,12 +1605,12 @@ async function inferenceFullVolumeSeqCovLayerPhase2(
         })
         console.log('profileInfo : ', profileInfo)
 
-        // -- document.getElementById("progressBarChild").style.width = 0 + "%";;
+        // -- document.getElementById("progressBarChild").style.width = 0 + "%";
 
         // Dispose the previous layer input tensor
         tf.dispose(curTensor[i])
         // delete the used class
-        // ? delete seqConvLayer;
+        // ? delete seqConvLayer
 
         // You can now use 'outputTensor' as needed
         console.log(' Output tensor', outputTensor)
@@ -1768,7 +1667,7 @@ async function inferenceFullVolumeSeqCovLayerPhase2(
         )
         console.log(' outLabelVolume final shape after resizing :  ', outLabelVolume.shape)
 
-        // let filterOutWithPreMask =  inferenceModelsList[$$("selectModel").getValue() - 1]["filterOutWithPreMask"];
+        // let filterOutWithPreMask =  inferenceModelsList[$$("selectModel").getValue() - 1]["filterOutWithPreMask"]
         const filterOutWithPreMask = modelEntry.filterOutWithPreMask
         // To clean the skull area wrongly segmented inphase-2.
         if (pipeline1_out != null && opts.isBrainCropMaskBased && filterOutWithPreMask) {
@@ -1823,7 +1722,7 @@ async function inferenceFullVolumeSeqCovLayerPhase2(
         }
         const Postprocess_t = ((performance.now() - startTime) / 1000).toFixed(4)
 
-        // document.getElementById("progressBar").style.width = 0;
+        // document.getElementById("progressBar").style.width = 0
         tf.engine().disposeVariables()
 
         console.log(
@@ -1857,7 +1756,7 @@ async function inferenceFullVolumeSeqCovLayerPhase2(
       callbackUI(unreliableReasons, NaN, unreliableReasons)
     }
   }
-  // });
+  // })
 }
 
 async function inferenceFullVolumePhase2(
@@ -1986,7 +1885,7 @@ async function inferenceFullVolumePhase2(
     testVol = await resizeWithZeroPadding(testVol, num_of_slices, slice_height, slice_width, refVoxel, boundVolSizeArr)
     console.log(' outLabelVolume final shape after resizing :  ', testVol.shape)
     // todo draw3dObjBoundingVolume()
-    draw3dObjBoundingVolume(tf.unstack(testVol))
+    draw3dObjBoundingVolume(tf.unstack(testVol), opts, modelEntry)
     testVol.dispose()
 
     return 0
@@ -2355,6 +2254,7 @@ async function inferenceFullVolumePhase1(
   opts,
   callbackImg,
   callbackUI,
+  niftiHeader, 
   niftiImage
 ) {
   statData.No_SubVolumes = 1
@@ -2629,6 +2529,8 @@ async function inferenceFullVolumePhase1(
               opts,
               callbackUI,
               callbackImg,
+              niftiHeader, 
+              niftiImage,
               false
             )
             await tf.dispose(outLabelVolume)
@@ -2943,16 +2845,19 @@ async function runInference(opts, modelEntry, niftiHeader, niftiImage, callbackI
     statData.Browser_Ver = await detectBrowserVersion()
     statData.OS = await detectOperatingSys()
     // ? NiiVue requires WebGL2, all contemporary browsers support it statData["WebGL1"] = checkWebGl1()
+    /*
+    //todo: web workers do not have access to gl
     statData.WebGL2 = await checkWebGl2(callbackUI)
     statData.GPU_Vendor = await detectGPUVendor()
     statData.GPU_Card = await detectGPUCardType()
     statData.GPU_Vendor_Full = await detectGPUVendor_v0()
     statData.GPU_Card_Full = await detectGPUCardType_v0()
+    */
     statData.CPU_Cores = await getCPUNumCores()
+
     statData.TF_Backend = tf.getBackend()
 
     statData.Which_Brainchop = 'latest'
-    // ? statData["Seq_Conv"] =  inferenceModelsList[$$("selectModel").getValue() - 1]["enableSeqConv"]
     statData.Seq_Conv = modelEntry.enableSeqConv
 
     // -- Init
@@ -2967,13 +2872,14 @@ async function runInference(opts, modelEntry, niftiHeader, niftiImage, callbackI
     statData.Extra_Err_Info = null
     statData.Extra_Info = null
 /*
+//todo: web workers do not have access to gl
     if (isChrome()) {
       statData.Heap_Size_MB = window.performance.memory.totalJSHeapSize / (1024 * 1024).toFixed(2)
       statData.Used_Heap_MB = window.performance.memory.usedJSHeapSize / (1024 * 1024).toFixed(2)
       statData.Heap_Limit_MB = window.performance.memory.jsHeapSizeLimit / (1024 * 1024).toFixed(2)
     }
     const gl = checkWebGl2() ? document.createElement('canvas').getContext('webgl2') : null
-*/
+
     console.log('MAX_TEXTURE_SIZE :', gl.getParameter(gl.MAX_TEXTURE_SIZE))
     console.log('MAX_RENDERBUFFER_SIZE :', gl.getParameter(gl.MAX_RENDERBUFFER_SIZE))
 
@@ -2987,6 +2893,7 @@ async function runInference(opts, modelEntry, niftiHeader, niftiImage, callbackI
     } else {
       statData.Texture_Size = null
     }
+    */
   } // if telemetryFlag
   const transpose = modelEntry.enableTranspose
   const enableCrop = modelEntry.enableCrop
@@ -3006,6 +2913,7 @@ async function runInference(opts, modelEntry, niftiHeader, niftiImage, callbackI
         opts,
         callbackImg,
         callbackUI,
+        niftiHeader,
         niftiImage
       )
     } else {
@@ -3050,4 +2958,4 @@ async function runInference(opts, modelEntry, niftiHeader, niftiImage, callbackI
 
 self.addEventListener('message', function(event) {
   runInference(event.data.opts, event.data.modelEntry, event.data.niftiHeader, event.data.niftiImage, wcallbackImg, wcallbackUI)
-}, false);
+}, false)

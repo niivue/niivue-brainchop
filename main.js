@@ -1,5 +1,6 @@
 import { Niivue } from "@niivue/niivue"
 import { runInference, inferenceModelsList, brainChopOpts } from "./brainchop.js"
+import { BWLabeler } from './bwlabels.js'
 
 async function main() {
   let defaults = {
@@ -13,10 +14,10 @@ async function main() {
   nv1.opts.multiplanarForceRender = true
   nv1.opts.yoke3Dto2DZoom = true
   await nv1.loadVolumes([{ url: "./t1_crop.nii.gz" }])
-
   aboutBtn.onclick = function () {
     window.alert("BrainChop models https://github.com/neuroneural/brainchop")
   }
+
   opacitySlider.oninput = function () {
     nv1.setOpacity(1, opacitySlider.value / 255)
   }
@@ -32,7 +33,7 @@ async function main() {
     nv1.removeVolume(nv1.volumes[0])
     nv1.addVolume(nii2)
   }
-  var chopWorker;
+  var chopWorker
   modelSelect.onchange = async function () {
     await ensureConformed()
     let model = inferenceModelsList[this.selectedIndex]
@@ -41,11 +42,10 @@ async function main() {
         console.log('Unable to start new segmentation: previous call has not completed')
         return
     }
-    chopWorker = new Worker("brainchop.js", { type: "module" });
+    chopWorker = new Worker("brainchop.js", { type: "module" })
     let hdr = {datatypeCode: nv1.volumes[0].hdr.datatypeCode, dims: nv1.volumes[0].hdr.dims}
-    //let msg = {opts:opts, modelEntry: model, niftiHeader: nv1.volumes[0].hdr, niftiImage: nv1.volumes[0].img}
     let msg = {opts:opts, modelEntry: model, niftiHeader: hdr, niftiImage: nv1.volumes[0].img}
-    chopWorker.postMessage(msg);
+    chopWorker.postMessage(msg)
     chopWorker.onmessage = async function(event) {
         let cmd = event.data.cmd
         let terminateWorker = false
@@ -58,23 +58,18 @@ async function main() {
             terminateWorker = true
         }
         if (terminateWorker) {
-            chopWorker.terminate();
-            chopWorker = undefined;
-            console.log('released webworker ')
+            chopWorker.terminate()
+            chopWorker = undefined
         }
-    };
+    }
   }
-
   saveBtn.onclick = function () {
     nv1.volumes[1].saveToDisk("Custom.nii")
   }
-
   async function callbackImg(img, opts, modelEntry) {
-
     while (nv1.volumes.length > 1) {
       await nv1.removeVolume(nv1.volumes[1])
     }
-
     let overlayVolume = await nv1.volumes[0].clone()
     overlayVolume.zeroImage()
     overlayVolume.hdr.scl_inter = 0
@@ -91,9 +86,6 @@ async function main() {
     overlayVolume.colormap = colormap
     overlayVolume.opacity = opacitySlider.value / 255
     await nv1.addVolume(overlayVolume)
-    //chopWorker.terminate();
-    //chopWorker = undefined;
-    //console.log('killed')
   }
   function callbackUI(message = "", progressFrac = -1, modalMessage = "") {
     console.log(message)
@@ -112,12 +104,12 @@ async function main() {
     document.getElementById("location").innerHTML = "&nbsp;&nbsp;" + data.string
   }
   for (let i = 0; i < inferenceModelsList.length; i++) {
-    var option = document.createElement("option");
+    var option = document.createElement("option")
     option.text = inferenceModelsList[i].modelName
     option.value = inferenceModelsList[i].id.toString()
-    modelSelect.appendChild(option);
+    modelSelect.appendChild(option)
   }
-  modelSelect.selectedIndex = -1;
+  modelSelect.selectedIndex = -1
 }
 
 main()
