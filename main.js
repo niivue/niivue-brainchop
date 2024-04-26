@@ -32,12 +32,37 @@ async function main() {
     nv1.removeVolume(nv1.volumes[0])
     nv1.addVolume(nii2)
   }
-
+  var chopWorker;
   modelSelect.onchange = async function () {
     await ensureConformed()
     let model = inferenceModelsList[this.selectedIndex]
     let opts = brainChopOpts
-    runInference(opts, model, nv1.volumes[0].hdr, nv1.volumes[0].img, callbackImg, callbackUI)
+    if(typeof(chopWorker) !== "undefined") {
+        console.log('Unable to start new segmentation: previous call has not completed')
+        return
+    }
+    chopWorker = new Worker("brainchop.js", { type: "module" });
+    let hdr = {datatypeCode: nv1.volumes[0].hdr.datatypeCode, dims: nv1.volumes[0].hdr.dims}
+    //let msg = {opts:opts, modelEntry: model, niftiHeader: nv1.volumes[0].hdr, niftiImage: nv1.volumes[0].img}
+    let msg = {opts:opts, modelEntry: model, niftiHeader: hdr, niftiImage: nv1.volumes[0].img}
+    chopWorker.postMessage(msg);
+    chopWorker.onmessage = async function(event) {
+        let cmd = event.data.cmd
+        let terminateWorker = false
+        if (cmd === 'ui') {
+            callbackUI(event.data.message, event.data.progressFrac, event.data.modalMessage)
+            terminateWorker = (event.data.modalMessage !== "")
+        }
+        if (cmd === 'img') {
+            await callbackImg(event.data.img, event.data.opts, event.data.modelEntry)
+            terminateWorker = true
+        }
+        if (terminateWorker) {
+            chopWorker.terminate();
+            chopWorker = undefined;
+            console.log('released webworker ')
+        }
+    };
   }
 
   saveBtn.onclick = function () {
@@ -47,7 +72,7 @@ async function main() {
   async function callbackImg(img, opts, modelEntry) {
 
     while (nv1.volumes.length > 1) {
-      nv1.removeVolume(nv1.volumes[1])
+      await nv1.removeVolume(nv1.volumes[1])
     }
 
     let overlayVolume = await nv1.volumes[0].clone()
@@ -65,7 +90,10 @@ async function main() {
     }
     overlayVolume.colormap = colormap
     overlayVolume.opacity = opacitySlider.value / 255
-    nv1.addVolume(overlayVolume)
+    await nv1.addVolume(overlayVolume)
+    //chopWorker.terminate();
+    //chopWorker = undefined;
+    //console.log('killed')
   }
   function callbackUI(message = "", progressFrac = -1, modalMessage = "") {
     console.log(message)

@@ -395,7 +395,15 @@ const inferenceModelsList = [
     description:
       'FreeSurfer aparc+aseg atlas 104 parcellate brain areas into 104 regions. It contains a combination of the Desikan-Killiany atlas for cortical area and also segmentation of subcortical regions. The model use sequential convolution for inference to overcome browser memory limitations but leads to longer computation time. '
   }
-] // inferenceModelsListX
+] // inferenceModelsList
+
+function wcallbackUI(message = "", progressFrac = -1, modalMessage = "") {
+  self.postMessage({cmd : "ui", message : message, progressFrac: progressFrac, modalMessage: modalMessage});
+}
+
+function wcallbackImg(img, opts, modelEntry) {
+  self.postMessage({cmd : "img", img : img, opts: opts, modelEntry: modelEntry});
+}
 
 async function checkZero(timeValue) {
   return timeValue < 10 ? timeValue : '0' + timeValue
@@ -743,7 +751,7 @@ async function inferenceFullVolumeSeqCovLayer(
   slice_height,
   slice_width
 ) {
-  window.alert('inferenceFullVolumeSeqCovLayer() is not dead code?')
+  console.log('>>>>>>inferenceFullVolumeSeqCovLayer() is not dead code?')
 }
 
 async function inferenceFullVolume(
@@ -755,20 +763,20 @@ async function inferenceFullVolume(
   slice_height,
   slice_width
 ) {
-  window.alert('inferenceFullVolume() is not dead code?')
+  console.log('>>>>>>inferenceFullVolume() is not dead code?')
 }
 
 async function inferenceSubVolumes(model, slices_3d, num_of_slices, slice_height, slice_width, pipeline1_out = null) {
-  window.alert('inferenceSubVolumes() is not dead code?')
+  console.log('>>>>>>inferenceSubVolumes() is not dead code?')
 }
 
 async function tensor2LightBuffer(tensor, dtype) {
-  window.alert('tensor2LightBuffer() is not dead code?')
+  console.log('>>>>>>tensor2LightBuffer() is not dead code?')
   // return new Buffer(tensor.shape, dtype, Array.from(tensor.dataSync()) );
 }
 
 async function draw3dObjBoundingVolume(unstackOutVolumeTensor) {
-  window.alert('draw3dObjBoundingVolume() is not dead code?')
+  console.log('>>>>>>draw3dObjBoundingVolume() is not dead code?')
   /*
   console.log("Plot cropped  volume shape ... ");
   // Convert all slices into 1 Dim array to download
@@ -845,7 +853,7 @@ async function draw3dObjBoundingVolume(unstackOutVolumeTensor) {
 }
 
 async function argMaxLarge(outVolumeBuffer, num_of_slices, slice_height, slice_width, numOfClasses, dtype = 'float32') {
-  window.alert('argMaxLarge() is not dead code?')
+  console.log('>>>>>>argMaxLarge() is not dead code?')
   /*
   if( findMinNumOfArrBufs(num_of_slices, slice_height, slice_width, numOfClasses, dtype) == 1) {
 
@@ -962,6 +970,7 @@ async function binarizeVolumeDataTensor(volumeDataTensor) {
   // element-wise: (x > 0 ? 1 : alpha * x );  e.g. Tenosr [0, 0.9, 0.8, -3] => Tensor [0, 1, 1, 0]
   return volumeDataTensor.step(alpha)
 }
+
 async function generateBrainMask(
   unstackOutVolumeTensor,
   num_of_slices,
@@ -970,7 +979,8 @@ async function generateBrainMask(
   modelEntry,
   opts,
   callbackUI,
-  callbackImg
+  callbackImg,
+  isFinalImage = true
 ) {
   console.log('Generate Brain Masking ... ')
   // Convert all slices into 1 Dim array to download
@@ -1009,15 +1019,13 @@ async function generateBrainMask(
       }
   }
   let brainOut = []
-
   if (opts.isBrainCropMaskBased) {
     //  Mask-based
-
     const brainMaskTensor1d = await binarizeVolumeDataTensor(tf.tensor1d(allOutputSlices3DCC1DimArray))
     brainOut = Array.from(brainMaskTensor1d.dataSync())
   } else {
     //  Brain tissue
-    window.alert('getAllSlicesData1D() is not dead code? niftiHeader and niftiImage required by getAllSlicesData1D')
+    console.log('>>>>>>getAllSlicesData1D() is not dead code? niftiHeader and niftiImage required by getAllSlicesData1D')
     /*const allSlices = getAllSlicesData1D(num_of_slices, niftiHeader, niftiImage)
     for (let sliceIdx = 0; sliceIdx < allOutputSlices3DCC.length; sliceIdx++) {
       for (let pixelIdx = 0; pixelIdx < slice_height * slice_width; pixelIdx++) {
@@ -1030,9 +1038,10 @@ async function generateBrainMask(
       brainOut.push.apply(brainOut, allSlices[sliceIdx])
     }*/
   }
-
-  callbackImg(brainOut, opts, modelEntry)
-  callbackUI('Segmentation finished', 0)
+  if (isFinalImage) {//all done
+    console.log(">>>>>>>>>>>>>>>>>>>>")
+    callbackImg(brainOut, opts, modelEntry)
+  }
   return tf.tensor(brainOut, [num_of_slices, slice_height, slice_width])
 }
 
@@ -1161,7 +1170,7 @@ class SequentialConvLayer {
     this.outChannels = model.outputLayers[0].kernel.shape[4]
     this.chunkSize = chunkSize
     this.isChannelLast = isChannelLast
-    this.callbackUI = callbackUI // fork
+    this.callbackUI = callbackUI
   }
 
   /**
@@ -1236,7 +1245,7 @@ class SequentialConvLayer {
       // console.log("---------------------------------------------------------");
       console.log(' channel loop')
 
-      const seqTimer = window.setInterval(async function () {
+      const seqTimer = setInterval(async function () {
         tf.engine().startScope() // Start TensorFlow.js scope
         console.log('=======================')
         const memoryInfo0 = tf.memory()
@@ -1298,7 +1307,7 @@ class SequentialConvLayer {
         tf.engine().endScope()
 
         if (chIdx === self.outChannels - 1) {
-          window.clearInterval(seqTimer)
+          clearInterval(seqTimer)
           // document.getElementById("progressBarChild").style.width = 0 + "%";
           tf.dispose(outB)
           const endTime = performance.now()
@@ -1619,7 +1628,7 @@ async function inferenceFullVolumeSeqCovLayerPhase2(
 
     // let curProgBar = parseInt(document.getElementById("progressBar").style.width);
 
-    const timer = window.setInterval(async function () {
+    const timer = setInterval(async function () {
       try {
         if (res.layers[i].activation.getClassName() !== 'linear') {
           curTensor[i] = await res.layers[i].apply(curTensor[i - 1])
@@ -1649,7 +1658,7 @@ async function inferenceFullVolumeSeqCovLayerPhase2(
         // ? original code provided special dialog for shaders if( err.message === "Failed to compile fragment shader.") {
         callbackUI(err.message, -1, err.message)
 
-        window.clearInterval(timer)
+        clearInterval(timer)
         tf.engine().endScope()
         tf.engine().disposeVariables()
 
@@ -1672,7 +1681,6 @@ async function inferenceFullVolumeSeqCovLayerPhase2(
       res.layers[i].dispose()
       curTensor[i - 1].dispose()
 
-      // bork
       callbackUI('Layer ' + i.toString(), (i + 1) / layersLength)
       if (tf.memory().unreliable) {
         const unreliableReasons = 'unreliable reasons :' + tf.memory().reasons
@@ -1681,7 +1689,7 @@ async function inferenceFullVolumeSeqCovLayerPhase2(
       if (i === layersLength - 2) {
         // Stop before the last layer or classification layer.
 
-        window.clearInterval(timer)
+        clearInterval(timer)
 
         // // Create an instance of SequentialConvLayer
         // The second parameter is important for memory,
@@ -1831,8 +1839,9 @@ async function inferenceFullVolumeSeqCovLayerPhase2(
         if (opts.telemetryFlag) {
           await submitTiming2GoogleSheet(statData, callbackUI)
         }
-        callbackImg(outimg, opts, modelEntry)
         callbackUI('Segmentation finished', 0)
+        callbackImg(outimg, opts, modelEntry)
+        
       } else {
         i++
       }
@@ -2058,13 +2067,13 @@ async function inferenceFullVolumePhase2(
     // ? let curProgBar = parseInt(document.getElementById("progressBar").style.width)
     // let timer = window.setInterval(function() {
     // ???? subsequent await are required
-    const timer = window.setInterval(async function () {
+    const timer = setInterval(async function () {
       try {
         // -- curTensor[i] = res.layers[i].apply( curTensor[i-1])
         curTensor[i] = res.layers[i].apply(curTensor[i - 1])
       } catch (err) {
         callbackUI(err.message, -1, err.message)
-        window.clearInterval(timer)
+        clearInterval(timer)
         tf.engine().endScope()
         tf.engine().disposeVariables()
 
@@ -2092,7 +2101,7 @@ async function inferenceFullVolumePhase2(
       // ? document.getElementById("memoryStatus").style.backgroundColor =  memStatus
 
       if (i === layersLength - 1) {
-        window.clearInterval(timer)
+        clearInterval(timer)
 
         // prediction = res.layers[res.layers.length-1].apply(curTensor[i])
         // curTensor[i].print()
@@ -2145,7 +2154,7 @@ async function inferenceFullVolumePhase2(
               const errTxt = "argMax buffer couldn't be created due to limited memory resources."
               callbackUI(errTxt, -1, errTxt)
 
-              window.clearInterval(timer)
+              clearInterval(timer)
               tf.engine().endScope()
               tf.engine().disposeVariables()
 
@@ -2168,7 +2177,7 @@ async function inferenceFullVolumePhase2(
 
             prediction_argmax.dispose()
 
-            window.clearInterval(timer)
+            clearInterval(timer)
             tf.engine().endScope()
             tf.engine().disposeVariables()
 
@@ -2316,8 +2325,8 @@ async function inferenceFullVolumePhase2(
           submitTiming2GoogleSheet(statData, callbackUI)
         }
         clearInterval(timer)
-        callbackImg(outimg, opts, modelEntry)
         callbackUI('Segmentation finished', 0)
+        callbackImg(outimg, opts, modelEntry)
       }
       i++
     }, delay)
@@ -2455,14 +2464,14 @@ async function inferenceFullVolumePhase1(
       // Dispose the volume
       tf.dispose(preModel_slices_3d)
 
-      const timer = window.setInterval(async function () {
+      const timer = setInterval(async function () {
         try {
           curTensor[i] = res.layers[i].apply(curTensor[i - 1])
         } catch (err) {
           // ? original code provided special dialog for fragment shader if( err.message === "Failed to compile fragment shader.")
           callbackUI(err.message, -1, err.message)
 
-          window.clearInterval(timer)
+          clearInterval(timer)
           tf.engine().endScope()
           tf.engine().disposeVariables()
 
@@ -2489,7 +2498,7 @@ async function inferenceFullVolumePhase1(
         }
 
         if (i === layersLength - 1) {
-          window.clearInterval(timer)
+          clearInterval(timer)
 
           // -- prediction = res.layers[res.layers.length-1].apply(curTensor[i])
           // -- curTensor[i].print()
@@ -2535,7 +2544,7 @@ async function inferenceFullVolumePhase1(
 
                 prediction_argmax.dispose()
 
-                window.clearInterval(timer)
+                clearInterval(timer)
                 tf.engine().endScope()
                 tf.engine().disposeVariables()
 
@@ -2558,7 +2567,7 @@ async function inferenceFullVolumePhase1(
 
               prediction_argmax.dispose()
 
-              window.clearInterval(timer)
+              clearInterval(timer)
               tf.engine().endScope()
               tf.engine().disposeVariables()
 
@@ -2619,7 +2628,8 @@ async function inferenceFullVolumePhase1(
               modelEntry,
               opts,
               callbackUI,
-              callbackImg
+              callbackImg,
+              false
             )
             await tf.dispose(outLabelVolume)
             console.log(' Phase-1 num of tensors after generateBrainMask: ', tf.memory().numTensors)
@@ -2807,6 +2817,7 @@ async function enableProductionMode(textureF16Flag = true) {
 }
 
 async function runInference(opts, modelEntry, niftiHeader, niftiImage, callbackImg, callbackUI) {
+  //callbackUI(modelEntry)
   callbackUI('Segmentation started', 0)
   const startTime = performance.now()
   const batchSize = opts.batchSize
@@ -2955,14 +2966,14 @@ async function runInference(opts, modelEntry, niftiHeader, niftiImage, callbackI
     statData.Error_Type = null
     statData.Extra_Err_Info = null
     statData.Extra_Info = null
-
+/*
     if (isChrome()) {
       statData.Heap_Size_MB = window.performance.memory.totalJSHeapSize / (1024 * 1024).toFixed(2)
       statData.Used_Heap_MB = window.performance.memory.usedJSHeapSize / (1024 * 1024).toFixed(2)
       statData.Heap_Limit_MB = window.performance.memory.jsHeapSizeLimit / (1024 * 1024).toFixed(2)
     }
     const gl = checkWebGl2() ? document.createElement('canvas').getContext('webgl2') : null
-
+*/
     console.log('MAX_TEXTURE_SIZE :', gl.getParameter(gl.MAX_TEXTURE_SIZE))
     console.log('MAX_RENDERBUFFER_SIZE :', gl.getParameter(gl.MAX_RENDERBUFFER_SIZE))
 
@@ -3036,3 +3047,7 @@ async function runInference(opts, modelEntry, niftiHeader, niftiImage, callbackI
     }
   }
 }
+
+self.addEventListener('message', function(event) {
+  runInference(event.data.opts, event.data.modelEntry, event.data.niftiHeader, event.data.niftiImage, wcallbackImg, wcallbackUI)
+}, false);
