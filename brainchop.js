@@ -36,14 +36,14 @@ const inferenceModelsList = [
     numOverlapBatches: 0, // Number of extra overlap batches for inference
     enableTranspose: true, // Keras and tfjs input orientation may need a tranposing step to be matched
     enableCrop: true, // For speed-up inference, crop brain from background before feeding to inference model to lower memory use.
-    cropPadding: 2, // Padding size add to cropped brain
+    cropPadding: 18, // Padding size add to cropped brain
     autoThreshold: 0, // Threshold between 0 and 1, given no preModel and tensor is normalized either min-max or by quantiles. Will remove noisy voxels around brain
     enableQuantileNorm: false, // Some models needs Quantile Normaliztion.
     filterOutWithPreMask: false, // Can be used to multiply final output with premodel output mask to crean noisy areas
     enableSeqConv: false, // For low memory system and low configuration, enable sequential convolution instead of last layer
     textureSize: 0, // Requested Texture size for the model, if unknown can be 0.
     warning: null, // Warning message to show when select the model.
-    inferenceDelay: 100, // Delay in ms time while looping layers applying.
+    inferenceDelay: 0, // Delay in ms time while looping layers applying.
     description:
       'Gray and white matter segmentation model. Operates on full T1 image in a single pass, but uses only 5 filters per layer. Can work on integrated graphics cards but is barely large enough to provide good accuracy. Still more accurate than the subvolume model.'
   },
@@ -68,7 +68,7 @@ const inferenceModelsList = [
     textureSize: 0, // Requested Texture size for the model, if unknown can be 0.
     warning:
       "This model may need dedicated graphics card.  For more info please check with Browser Resources <i class='fa fa-cogs'></i>.",
-    inferenceDelay: 100, // Delay in ms time while looping layers applying.
+    inferenceDelay: 0, // Delay in ms time while looping layers applying.
     description:
       'Gray and white matter segmentation model. Operates on full T1 image in a single pass but needs a dedicated graphics card to operate. Provides the best accuracy with hard cropping for better speed'
   },
@@ -93,7 +93,7 @@ const inferenceModelsList = [
     textureSize: 0, // Requested Texture size for the model, if unknown can be 0.
     warning:
       "This model may need dedicated graphics card.  For more info please check with Browser Resources <i class='fa fa-cogs'></i>.",
-    inferenceDelay: 100, // Delay in ms time while looping layers applying.
+    inferenceDelay: 1, // Delay in ms time while looping layers applying.
     description:
       'Gray and white matter segmentation model. Operates on full T1 image in a single pass but needs a dedicated graphics card to operate. Provides high accuracy and fit low memory available but slower'
   },
@@ -118,7 +118,7 @@ const inferenceModelsList = [
     textureSize: 0, // Requested Texture size for the model, if unknown can be 0.
     warning:
       "This model may need dedicated graphics card.  For more info please check with Browser Resources <i class='fa fa-cogs'></i>.", // Warning message to show when select the model.
-    inferenceDelay: 100, // Delay in ms time while looping layers applying.
+    inferenceDelay: 0, // Delay in ms time while looping layers applying.
     description:
       'Parcellation of the brain into 17 regions: gray and white matter plus subcortical areas. This is a robust model able to handle range of data quality, including varying saturation, and even clinical scans. It may work on infant brains, but your mileage may vary.'
   },
@@ -218,7 +218,7 @@ const inferenceModelsList = [
     textureSize: 0, // Requested Texture size for the model, if unknown can be 0.
     warning:
       "This model may need dedicated graphics card.  For more info please check with Browser Resources <i class='fa fa-cogs'></i>.", // Warning message to show when select the model.
-    inferenceDelay: 100, // Delay in ms time while looping layers applying.
+    inferenceDelay: 1, // Delay in ms time while looping layers applying.
     description:
       'This is a 50-class model, that segments the brain into the Aparc+Aseg Freesurfer Atlas but one where cortical homologues are merged into a single class.'
   },
@@ -243,7 +243,7 @@ const inferenceModelsList = [
     textureSize: 0, // Requested Texture size for the model, if unknown can be 0.
     warning:
       "This model may need dedicated graphics card.  For more info please check with Browser Resources <i class='fa fa-cogs'></i>.", // Warning message to show when select the model.
-    inferenceDelay: 100, // Delay in ms time while looping layers applying.
+    inferenceDelay: 1, // Delay in ms time while looping layers applying.
     description:
       'This is a 50-class model, that segments the brain into the Aparc+Aseg Freesurfer Atlas but one where cortical homologues are merged into a single class. The model use sequential convolution for inference to overcome browser memory limitations but leads to longer computation time.'
   },
@@ -260,7 +260,7 @@ const inferenceModelsList = [
     numOverlapBatches: 0, // Number of extra overlap batches for inference
     enableTranspose: true, // Keras and tfjs input orientation may need a tranposing step to be matched
     enableCrop: true, // For speed-up inference, crop brain from background before feeding to inference model to lower memory use.
-    cropPadding: 2, // Padding size add to cropped brain
+    cropPadding: 18, // Padding size add to cropped brain
     autoThreshold: 0, // Threshold between 0 and 1, given no preModel and tensor is normalized either min-max or by quantiles. Will remove noisy voxels around brain
     enableQuantileNorm: false, // Some models needs Quantile Normaliztion.
     filterOutWithPreMask: false, // Can be used to multiply final output with premodel output mask to crean noisy areas
@@ -309,7 +309,7 @@ const inferenceModelsList = [
     numOverlapBatches: 0, // Number of extra overlap batches for inference
     enableTranspose: true, // Keras and tfjs input orientation may need a tranposing step to be matched
     enableCrop: true, // For speed-up inference, crop brain from background before feeding to inference model to lower memory use.
-    cropPadding: 2, // Padding size add to cropped brain
+    cropPadding: 17, // Padding size add to cropped brain
     autoThreshold: 0, // Threshold between 0 and 1, given no preModel and tensor is normalized either min-max or by quantiles. Will remove noisy voxels around brain
     enableQuantileNorm: false, // Some models needs Quantile Normaliztion.
     filterOutWithPreMask: false, // Can be used to multiply final output with premodel output mask to crean noisy areas
@@ -1370,40 +1370,16 @@ async function inferenceFullVolumeSeqCovLayerPhase2(
   }
 
   console.log(' mask_3d shape :  ', mask_3d.shape)
+  const coords = await tf.whereAsync(mask_3d);
+  //-- Get each voxel coords (x, y, z)
 
-  const coords = await tf.whereAsync(mask_3d)
-  // -- Get each voxel coords (x, y, z)
-
-  mask_3d.dispose()
-
-  const coordsArr = coords.arraySync()
-
-  let row_min = slice_height
-  let row_max = 0
-  let col_min = slice_width
-  let col_max = 0
-  let depth_min = num_of_slices
-  let depth_max = 0
-
-  for (let i = 0; i < coordsArr.length; i++) {
-    if (row_min > coordsArr[i][0]) {
-      row_min = coordsArr[i][0]
-    } else if (row_max < coordsArr[i][0]) {
-      row_max = coordsArr[i][0]
-    }
-
-    if (col_min > coordsArr[i][1]) {
-      col_min = coordsArr[i][1]
-    } else if (col_max < coordsArr[i][1]) {
-      col_max = coordsArr[i][1]
-    }
-
-    if (depth_min > coordsArr[i][2]) {
-      depth_min = coordsArr[i][2]
-    } else if (depth_max < coordsArr[i][2]) {
-      depth_max = coordsArr[i][2]
-    }
-  }
+    mask_3d.dispose();
+    const row_min = coords.min(0).arraySync()[0];
+    const row_max = coords.max(0).arraySync()[0];
+    const col_min = coords.min(0).arraySync()[1];
+    const col_max = coords.max(0).arraySync()[1];
+    const depth_min = coords.min(0).arraySync()[2];
+    const depth_max = coords.max(0).arraySync()[2];
 
   console.log('row min and max  :', row_min, row_max)
   console.log('col min and max  :', col_min, col_max)
