@@ -1077,7 +1077,7 @@ class SequentialConvLayer {
     * @since 3.0.0
     * @member SequentialConvLayer
     * @param {tf.Tensor}  inputTensor  e.g.  [ 1, 256, 256, 256, 5 ]
-    * @return {promise}
+    * @return {outC}
     *
     * convLayer.rank -> 3
     * typeof(convLayer) -> "object"
@@ -1123,8 +1123,6 @@ class SequentialConvLayer {
     // "this" has another meaning inside the timer.
 
     // document.getElementById("progressBarChild").parentElement.style.visibility = "visible"
-
-    return new Promise((resolve) => {
       const startTime = performance.now()
 
       const convLayer = self.model.layers[self.model.layers.length - 1]
@@ -1144,7 +1142,7 @@ class SequentialConvLayer {
       // console.log("---------------------------------------------------------")
       console.log(' channel loop')
 
-      const seqTimer = setInterval(async function () {
+      while (true) {
         tf.engine().startScope() // Start TensorFlow.js scope
         console.log('=======================')
         const memoryInfo0 = tf.memory()
@@ -1206,14 +1204,13 @@ class SequentialConvLayer {
         tf.engine().endScope()
 
         if (chIdx === self.outChannels - 1) {
-          clearInterval(seqTimer)
           // document.getElementById("progressBarChild").style.width = 0 + "%"
           tf.dispose(outB)
           const endTime = performance.now()
           const executionTime = endTime - startTime
           console.log(`Execution time for output layer: ${executionTime} milliseconds`)
           tf.ENV.set('WEBGL_DELETE_TEXTURE_THRESHOLD', oldDeleteTextureThreshold)
-          resolve(outC)
+          return(outC)
         } else {
           chIdx++
 
@@ -1234,12 +1231,8 @@ class SequentialConvLayer {
 
           // document.getElementById("progressBarChild").style.width = (chIdx + 1) * 100 / self.outChannels + "%"
         }
-
-        // Artificially introduce a pause to allow for garbage collection to catch up
-        await new Promise((resolve) => setTimeout(resolve, 100))
-      }, 0)
-    })
-  }
+      }
+    }
 } // <<<< End of class
 
 async function generateOutputSlicesV2(
@@ -1422,8 +1415,6 @@ async function inferenceFullVolumeSeqCovLayerPhase2(
   }
 
   statData.Brainchop_Ver = 'FullVolume'
-  // model.then(function (res) {
-  // console.log("--->>>>", opts.drawBoundingVolume); return
   const res = await model
   try {
     let startTime = performance.now()
@@ -1431,8 +1422,8 @@ async function inferenceFullVolumeSeqCovLayerPhase2(
     // maxLabelPredicted in whole volume of the brain
     let maxLabelPredicted = 0
     const transpose = modelEntry.enableTranspose
-    const delay = modelEntry.inferenceDelay
-    console.log('Inference delay :', delay)
+    //const delay = modelEntry.inferenceDelay
+    //console.log('Inference delay :', delay)
 
     if (transpose) {
       cropped_slices_3d_w_pad = await cropped_slices_3d_w_pad.transpose()
@@ -1495,15 +1486,11 @@ async function inferenceFullVolumeSeqCovLayerPhase2(
     const expected_Num_labels = isChannelLast
       ? outputLayer.outputShape[outputLayer.outputShape.length - 1]
       : outputLayer.outputShape[1]
-    console.log('Num of output channels : ', expected_Num_labels)
+    console.log('Num of output channels x: ', expected_Num_labels)
 
     const curTensor = []
     curTensor[0] = await cropped_slices_3d_w_pad.reshape(adjusted_input_shape)
-    // console.log("curTensor[0] :", curTensor[0].dataSync())
-
-    // let curProgBar = parseInt(document.getElementById("progressBar").style.width)
-
-    const timer = setInterval(async function () {
+    while (true) {
       try {
         if (res.layers[i].activation.getClassName() !== 'linear') {
           curTensor[i] = await res.layers[i].apply(curTensor[i - 1])
@@ -1533,7 +1520,6 @@ async function inferenceFullVolumeSeqCovLayerPhase2(
         // ? original code provided special dialog for shaders if( err.message === "Failed to compile fragment shader.") {
         callbackUI(err.message, -1, err.message)
 
-        clearInterval(timer)
         tf.engine().endScope()
         tf.engine().disposeVariables()
 
@@ -1564,7 +1550,6 @@ async function inferenceFullVolumeSeqCovLayerPhase2(
       if (i === layersLength - 2) {
         // Stop before the last layer or classification layer.
 
-        clearInterval(timer)
 
         // // Create an instance of SequentialConvLayer
         // The second parameter is important for memory,
@@ -1720,7 +1705,7 @@ async function inferenceFullVolumeSeqCovLayerPhase2(
       } else {
         i++
       }
-    }, delay)
+    }
   } catch (err) {
     callbackUI(err.message, -1, err.message)
     console.log(
@@ -1879,8 +1864,8 @@ async function inferenceFullVolumePhase2(
     // maxLabelPredicted in whole volume of the brain
     let maxLabelPredicted = 0
     const transpose = modelEntry.enableTranspose
-    const delay = modelEntry.inferenceDelay
-    console.log('Inference delay :', delay)
+    //const delay = modelEntry.inferenceDelay
+    //console.log('Inference delay :', delay)
 
     if (transpose) {
       cropped_slices_3d_w_pad = cropped_slices_3d_w_pad.transpose()
@@ -1939,16 +1924,12 @@ async function inferenceFullVolumePhase2(
     curTensor[0] = cropped_slices_3d_w_pad.reshape(adjusted_input_shape)
     // console.log("curTensor[0] :", curTensor[0].dataSync())
 
-    // ? let curProgBar = parseInt(document.getElementById("progressBar").style.width)
-    // let timer = window.setInterval(function() {
-    // ???? subsequent await are required
-    const timer = setInterval(async function () {
+    while (true) {
       try {
         // -- curTensor[i] = res.layers[i].apply( curTensor[i-1])
         curTensor[i] = res.layers[i].apply(curTensor[i - 1])
       } catch (err) {
         callbackUI(err.message, -1, err.message)
-        clearInterval(timer)
         tf.engine().endScope()
         tf.engine().disposeVariables()
 
@@ -1976,7 +1957,6 @@ async function inferenceFullVolumePhase2(
       // ? document.getElementById("memoryStatus").style.backgroundColor =  memStatus
 
       if (i === layersLength - 1) {
-        clearInterval(timer)
 
         // prediction = res.layers[res.layers.length-1].apply(curTensor[i])
         // curTensor[i].print()
@@ -2029,7 +2009,6 @@ async function inferenceFullVolumePhase2(
               const errTxt = "argMax buffer couldn't be created due to limited memory resources."
               callbackUI(errTxt, -1, errTxt)
 
-              clearInterval(timer)
               tf.engine().endScope()
               tf.engine().disposeVariables()
 
@@ -2052,7 +2031,6 @@ async function inferenceFullVolumePhase2(
 
             prediction_argmax.dispose()
 
-            clearInterval(timer)
             tf.engine().endScope()
             tf.engine().disposeVariables()
 
@@ -2143,8 +2121,6 @@ async function inferenceFullVolumePhase2(
           tf.dispose(outLabelVolume)
           tf.engine().endScope()
           tf.engine().disposeVariables()
-          // ???? await
-          // BINGO
           outimg = await generateOutputSlicesV2(
             img,
             Vshape,
@@ -2199,12 +2175,11 @@ async function inferenceFullVolumePhase2(
         if (opts.telemetryFlag) {
           submitTiming2GoogleSheet(statData, callbackUI)
         }
-        clearInterval(timer)
         callbackUI('Segmentation finished', 0)
         callbackImg(outimg, opts, modelEntry)
       }
       i++
-    }, delay)
+    }
   } catch (err) {
     callbackUI(err.message, -1, err.message)
     console.log(
@@ -2328,7 +2303,7 @@ async function inferenceFullVolumePhase1(
 
       // maxLabelPredicted in whole volume of the brain
       let maxLabelPredicted = 0
-      const delay = inferenceModelsList[modelEntry.preModelId - 1].inferenceDelay
+      //const delay = inferenceModelsList[modelEntry.preModelId - 1].inferenceDelay
 
       let i = 1
       const layersLength = res.layers.length
@@ -2339,15 +2314,13 @@ async function inferenceFullVolumePhase1(
 
       // Dispose the volume
       tf.dispose(preModel_slices_3d)
-
-      const timer = setInterval(async function () {
+      while (true) {
         try {
           curTensor[i] = res.layers[i].apply(curTensor[i - 1])
         } catch (err) {
           // ? original code provided special dialog for fragment shader if( err.message === "Failed to compile fragment shader.")
           callbackUI(err.message, -1, err.message)
 
-          clearInterval(timer)
           tf.engine().endScope()
           tf.engine().disposeVariables()
 
@@ -2374,8 +2347,7 @@ async function inferenceFullVolumePhase1(
         }
 
         if (i === layersLength - 1) {
-          clearInterval(timer)
-
+          
           // -- prediction = res.layers[res.layers.length-1].apply(curTensor[i])
           // -- curTensor[i].print()
           // -- outputDataBeforArgmx = Array.from(curTensor[i].dataSync())
@@ -2420,7 +2392,6 @@ async function inferenceFullVolumePhase1(
 
                 prediction_argmax.dispose()
 
-                clearInterval(timer)
                 tf.engine().endScope()
                 tf.engine().disposeVariables()
 
@@ -2443,7 +2414,6 @@ async function inferenceFullVolumePhase1(
 
               prediction_argmax.dispose()
 
-              clearInterval(timer)
               tf.engine().endScope()
               tf.engine().disposeVariables()
 
@@ -2606,7 +2576,7 @@ async function inferenceFullVolumePhase1(
           }
         }
         i++
-      }, delay)
+      }
     } catch (err) {
       callbackUI(err.message, -1, err.message)
       console.log(
@@ -2615,7 +2585,6 @@ async function inferenceFullVolumePhase1(
       )
 
       // document.getElementById("webGl2Status").style.backgroundColor =  isWebGL2ContextLost() ? "Red" : "Green"
-
       // document.getElementById("memoryStatus").style.backgroundColor =  tf.memory().unreliable ? "Red" : "Green"
     }
     // })
