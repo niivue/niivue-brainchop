@@ -16,11 +16,9 @@ async function main() {
   aboutBtn.onclick = function () {
     window.alert("BrainChop models https://github.com/neuroneural/brainchop")
   }
-
   opacitySlider.oninput = function () {
     nv1.setOpacity(1, opacitySlider.value / 255)
   }
-
   async function ensureConformed() {
     let nii = nv1.volumes[0]
     let isConformed = ((nii.dims[1] === 256) && (nii.dims[2] === 256) && (nii.dims[3] === 256))
@@ -45,21 +43,21 @@ async function main() {
     let hdr = {datatypeCode: nv1.volumes[0].hdr.datatypeCode, dims: nv1.volumes[0].hdr.dims}
     let msg = {opts:opts, modelEntry: model, niftiHeader: hdr, niftiImage: nv1.volumes[0].img}
     chopWorker.postMessage(msg)
-    chopWorker.onmessage = async function(event) {
-        let cmd = event.data.cmd
-        let terminateWorker = false
-        if (cmd === 'ui') {
-            callbackUI(event.data.message, event.data.progressFrac, event.data.modalMessage)
-            terminateWorker = (event.data.modalMessage !== "")
-        }
-        if (cmd === 'img') {
-            await callbackImg(event.data.img, event.data.opts, event.data.modelEntry)
-            terminateWorker = true
-        }
-        if (terminateWorker) {
+    chopWorker.onmessage = function(event) {
+      let cmd = event.data.cmd
+      if (cmd === 'ui') {
+          if (event.data.modalMessage !== "") {
             chopWorker.terminate()
             chopWorker = undefined
-        }
+          }
+          callbackUI(event.data.message, event.data.progressFrac, event.data.modalMessage)
+          
+      }
+      if (cmd === 'img') {
+          chopWorker.terminate()
+          chopWorker = undefined
+          callbackImg(event.data.img, event.data.opts, event.data.modelEntry)
+      }
     }
   }
   saveBtn.onclick = function () {

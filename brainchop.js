@@ -1683,9 +1683,6 @@ async function inferenceFullVolumeSeqCovLayerPhase2(
         }
         const Postprocess_t = ((performance.now() - startTime) / 1000).toFixed(4)
 
-        // document.getElementById("progressBar").style.width = 0
-        tf.engine().disposeVariables()
-
         console.log(
           'Processing the whole brain volume in tfjs for multi-class output mask took : ',
           ((performance.now() - inferenceStartTime) / 1000).toFixed(4) + '  Seconds'
@@ -1701,7 +1698,7 @@ async function inferenceFullVolumeSeqCovLayerPhase2(
         }
         callbackUI('Segmentation finished', 0)
         callbackImg(outimg, opts, modelEntry)
-        
+        return 0
       } else {
         i++
       }
@@ -2177,6 +2174,7 @@ async function inferenceFullVolumePhase2(
         }
         callbackUI('Segmentation finished', 0)
         callbackImg(outimg, opts, modelEntry)
+        return 0
       }
       i++
     }
@@ -2546,6 +2544,7 @@ async function inferenceFullVolumePhase1(
                   statData,
                   niftiImage
                 )
+                return 0
                 // inferenceFullVolumeSeqCovLayerPhase2(model, slices_3d.transpose(), num_of_slices, slice_height, slice_width, slices_3d_mask)
               } else {
                 // Mask cropping BUT no seq conv
@@ -2568,7 +2567,7 @@ async function inferenceFullVolumePhase1(
               }
             } else {
               // -- In version 3.0.0 this function not used
-              inferenceSubVolumes(model, slices_3d, num_of_slices, slice_height, slice_width, slices_3d_mask)
+              await inferenceSubVolumes(model, slices_3d, num_of_slices, slice_height, slice_width, slices_3d_mask)
               // inferenceSubVolumes(model, slices_3d.transpose(), num_of_slices, slice_height, slice_width, slices_3d_mask)
             }
           }
