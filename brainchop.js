@@ -1152,7 +1152,7 @@ class SequentialConvLayer {
       while (true) {
         tf.engine().startScope() // Start TensorFlow.js scope
         console.log('=======================')
-        const memoryInfo0 = tf.memory()
+        const memoryInfo0 = await tf.memory()
         console.log(`| Number of Tensors: ${memoryInfo0.numTensors}`)
         console.log(`| Number of Data Buffers: ${memoryInfo0.numDataBuffers}`)
         console.log('Channel : ', chIdx)
@@ -1176,21 +1176,11 @@ class SequentialConvLayer {
           tf.tidy(() => tf.matMul(tf.ones([1, 1]), tf.ones([1, 1])))
           return [newoutC, newoutB]
         })
-
-        // -- await showMemStatus(chIdx, self.outChannels)
-
-        const memoryInfo1 = tf.memory()
-        console.log(`| Number of Tensors: ${memoryInfo1.numTensors}`)
-        console.log(`| Number of Data Buffers: ${memoryInfo1.numDataBuffers}`)
         console.log('=======================')
-
-        // Log memory usage
-
-        const memoryInfo = tf.memory()
+        const memoryInfo = await tf.memory()
         self.callbackUI(`Iteration ${chIdx}`, chIdx / self.outChannels)
         console.log(`Number of Tensors: ${memoryInfo.numTensors}`)
         console.log(`Number of Data Buffers: ${memoryInfo.numDataBuffers}`)
-        console.log(`Bytes In Use: ${memoryInfo.numBytes}`)
         console.log(`Megabytes In Use: ${(memoryInfo.numBytes / 1048576).toFixed(3)} MB`)
         if (memoryInfo.unreliable) {
           console.log(`Unreliable: ${memoryInfo.unreliable}`)
@@ -1512,15 +1502,6 @@ async function inferenceFullVolumeSeqCovLayerPhase2(
             3
           ) // important for memory use
         }
-
-        // // Log memory usage
-        // const memoryInfo = tf.memory()
-        // console.log(`Iteration ${i}:`)
-        // console.log(`Number of Tensors: ${memoryInfo.numTensors}`)
-        // console.log(`Number of Data Buffers: ${memoryInfo.numDataBuffers}`)
-        // console.log(`Bytes In Use: ${memoryInfo.numBytes}`)
-        // console.log(`Megabytes In Use: ${(memoryInfo.numBytes / 1048576).toFixed(3)} MB`)
-        // console.log(`Unreliable: ${memoryInfo.unreliable}`)
 
         tf.dispose(curTensor[i - 1])
       } catch (err) {
