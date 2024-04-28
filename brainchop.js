@@ -748,12 +748,6 @@ async function minMaxNormalizeVolumeData(volumeData) {
   return normalizedSlices_3d
 }
 
-async function findArrayMax(array) {
-  return array.reduce((e1, e2) => {
-    return e1 > e2 ? e1 : e2
-  })
-}
-
 async function inferenceFullVolumeSeqCovLayer(
   model,
   slices_3d,
@@ -1599,8 +1593,7 @@ async function inferenceFullVolumeSeqCovLayerPhase2(
         const Inference_t = ((performance.now() - startTime) / 1000).toFixed(4)
 
         console.log(' find array max ')
-        const curBatchMaxLabel = await findArrayMax(Array.from(outputTensor.dataSync()))
-
+        const curBatchMaxLabel = await outputTensor.max().dataSync()[0]
         if (maxLabelPredicted < curBatchMaxLabel) {
           maxLabelPredicted = curBatchMaxLabel
         }
@@ -2067,8 +2060,7 @@ async function inferenceFullVolumePhase2(
         tf.dispose(curTensor[i])
         // allPredictions.push({"id": allBatches[j].id, "coordinates": allBatches[j].coordinates, "data": Array.from(prediction_argmax.dataSync()) })
         console.log(' find array max ')
-        // ???? await
-        const curBatchMaxLabel = await findArrayMax(Array.from(prediction_argmax.dataSync()))
+        const curBatchMaxLabel = await prediction_argmax.max().dataSync()[0]
 
         if (maxLabelPredicted < curBatchMaxLabel) {
           maxLabelPredicted = curBatchMaxLabel
@@ -2222,7 +2214,6 @@ async function inferenceFullVolumePhase1(
   statData.No_SubVolumes = 1
   // load pre-model for inference first, can be null if no pre-model such as GWM models
   if (modelEntry.preModelId) {
-    // let preModel = await load_model(inferenceModelsList[ modelEntry["preModelId"] - 1]['path'] )
     const preModel = await load_model(inferenceModelsList[modelEntry.preModelId - 1].path)
     const transpose = inferenceModelsList[modelEntry.preModelId - 1].enableTranspose
     const quantileNorm = inferenceModelsList[modelEntry.preModelId - 1].enableQuantileNorm
@@ -2450,7 +2441,7 @@ async function inferenceFullVolumePhase1(
           tf.dispose(curTensor[i])
 
           console.log(' Pre-model find array max ')
-          const curBatchMaxLabel = await findArrayMax(Array.from(prediction_argmax.dataSync()))
+          const curBatchMaxLabel = await prediction_argmax.max().dataSync()[0]
 
           if (maxLabelPredicted < curBatchMaxLabel) {
             maxLabelPredicted = curBatchMaxLabel
