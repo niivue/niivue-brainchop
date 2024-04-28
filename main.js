@@ -1,6 +1,5 @@
 import { Niivue } from "@niivue/niivue"
 import { runInference, inferenceModelsList, brainChopOpts } from "./brainchop.js"
-import { BWLabeler } from './bwlabels.js'
 
 async function main() {
   let defaults = {

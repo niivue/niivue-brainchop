@@ -1763,7 +1763,7 @@ async function inferenceFullVolumePhase2(
       mask_3d = await slices_3d.greater([0]).asType('bool')
     }
   } else {
-    mask_3d = pipeline1_out.greater([0]).asType('bool')
+    mask_3d = await pipeline1_out.greater([0]).asType('bool')
     // -- pipeline1_out.dispose()
   }
   console.log(' mask_3d shape :  ', mask_3d.shape)
@@ -2550,9 +2550,7 @@ async function inferenceFullVolumePhase1(
               } else {
                 // Mask cropping BUT no seq conv
                 console.log('------ Mask Cropping  -  NO Seq Convoluton ------')
-                // ? await
-                // todo output not used outimg = await
-                inferenceFullVolumePhase2(
+                await inferenceFullVolumePhase2(
                   model,
                   slices_3d,
                   num_of_slices,
