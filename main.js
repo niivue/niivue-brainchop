@@ -43,29 +43,33 @@ async function main() {
   saveBtn.onclick = function () {
     nv1.volumes[1].saveToDisk("Custom.nii")
   }
-
+  async function fetchJSON(fnm) {
+    const response = await fetch(fnm)
+    const js = await response.json()
+    return js
+  }
   async function callbackImg(img, opts, modelEntry) {
-
     while (nv1.volumes.length > 1) {
-      nv1.removeVolume(nv1.volumes[1])
+      await nv1.removeVolume(nv1.volumes[1])
     }
-
     let overlayVolume = await nv1.volumes[0].clone()
     overlayVolume.zeroImage()
     overlayVolume.hdr.scl_inter = 0
     overlayVolume.hdr.scl_slope = 1
     overlayVolume.img = new Uint8Array(img)
-    let colormap = opts.atlasSelectedColorTable.toLowerCase()
-    const cmaps = nv1.colormaps()
-    if (!cmaps.includes(colormap)) {
-          colormap = 'actc'
-          if (modelEntry.type === 'Atlas') {
-            colormap = 'random'
-          }
+    if (modelEntry.colormapPath) {
+      let cmap = await fetchJSON(modelEntry.colormapPath)
+      overlayVolume.setColormapLabel(cmap)
+    } else {
+      let colormap = opts.atlasSelectedColorTable.toLowerCase()
+      const cmaps = nv1.colormaps()
+      if (!cmaps.includes(colormap)) {
+        colormap = 'actc'
+      }
+      overlayVolume.colormap = colormap
     }
-    overlayVolume.colormap = colormap
     overlayVolume.opacity = opacitySlider.value / 255
-    nv1.addVolume(overlayVolume)
+    await nv1.addVolume(overlayVolume)
   }
   function callbackUI(message = "", progressFrac = -1, modalMessage = "") {
     console.log(message)
@@ -84,12 +88,12 @@ async function main() {
     document.getElementById("location").innerHTML = "&nbsp;&nbsp;" + data.string
   }
   for (let i = 0; i < inferenceModelsList.length; i++) {
-    var option = document.createElement("option");
+    var option = document.createElement("option")
     option.text = inferenceModelsList[i].modelName
     option.value = inferenceModelsList[i].id.toString()
-    modelSelect.appendChild(option);
+    modelSelect.appendChild(option)
   }
-  modelSelect.selectedIndex = -1;
+  modelSelect.selectedIndex = -1
 }
 
 main()

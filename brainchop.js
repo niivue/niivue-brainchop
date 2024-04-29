@@ -3,7 +3,7 @@ import { BWLabeler } from './bwlabels.js'
 export { runInference, inferenceModelsList, brainChopOpts }
 
 const brainChopOpts = {
-  // General  settings for input shape  [batchSize, batch_D, batch_H, batch_W, numOfChan]
+  // General settings for input shape [batchSize, batch_D, batch_H, batch_W, numOfChan]
   batchSize: 1, // How many batches are used during each inference iteration
   numOfChan: 1, // num of channel of the input shape
   isColorEnable: true, // If false, grey scale will enabled
@@ -30,13 +30,14 @@ const inferenceModelsList = [
     modelName: '\u26A1 Tissue GWM (light)',
     labelsPath: './models/model5_gw_ae/labels.json',
     colorsPath: './models/model5_gw_ae/colorLUT.json',
+    colormapPath: './models/model5_gw_ae/colormap3.json',
     preModelId: null, // Model run first e.g.  crop the brain   { null, 1, 2, ..  }
     preModelPostProcess: false, // If true, perform postprocessing to remove noisy regions after preModel inference generate output.
     isBatchOverlapEnable: false, // create extra overlap batches for inference
     numOverlapBatches: 0, // Number of extra overlap batches for inference
     enableTranspose: true, // Keras and tfjs input orientation may need a tranposing step to be matched
     enableCrop: true, // For speed-up inference, crop brain from background before feeding to inference model to lower memory use.
-    cropPadding: 2, // Padding size add to cropped brain
+    cropPadding: 18, // Padding size add to cropped brain
     autoThreshold: 0, // Threshold between 0 and 1, given no preModel and tensor is normalized either min-max or by quantiles. Will remove noisy voxels around brain
     enableQuantileNorm: false, // Some models needs Quantile Normaliztion.
     filterOutWithPreMask: false, // Can be used to multiply final output with premodel output mask to crean noisy areas
@@ -54,6 +55,7 @@ const inferenceModelsList = [
     modelName: '\u{1F52A} Tissue GWM (High Acc)',
     labelsPath: './models/model20chan3cls/labels.json',
     colorsPath: './models/model20chan3cls/colorLUT.json',
+    colormapPath: './models/model20chan3cls/colormap.json',
     preModelId: null, // Model run first e.g.  crop the brain   { null, 1, 2, ..  }
     preModelPostProcess: false, // If true, perform postprocessing to remove noisy regions after preModel inference generate output.
     isBatchOverlapEnable: false, // create extra overlap batches for inference
@@ -79,6 +81,7 @@ const inferenceModelsList = [
     modelName: '\u{1F52A} Tissue GWM (High Acc, Low Mem)',
     labelsPath: './models/model20chan3cls/labels.json',
     colorsPath: './models/model20chan3cls/colorLUT.json',
+    colormapPath: './models/model20chan3cls/colormap.json',
     preModelId: null, // Model run first e.g.  crop the brain   { null, 1, 2, ..  }
     preModelPostProcess: false, // If true, perform postprocessing to remove noisy regions after preModel inference generate output.
     isBatchOverlapEnable: false, // create extra overlap batches for inference
@@ -104,6 +107,7 @@ const inferenceModelsList = [
     modelName: '\u{1FA93} Subcortical + GWM (High Mem, Fast)',
     labelsPath: './models/model30chan18cls/labels.json',
     colorsPath: './models/model30chan18cls/colorLUT.json',
+    colormapPath: './models/model30chan18cls/colormap.json',
     preModelId: null, // Model run first e.g.  crop the brain  { null, 1, 2, ..  }
     preModelPostProcess: false, // If true, perform postprocessing to remove noisy regions after preModel inference generate output.
     isBatchOverlapEnable: false, // create extra overlap batches for inference
@@ -129,6 +133,7 @@ const inferenceModelsList = [
     modelName: '\u{1FA93} Subcortical + GWM (Low Mem, Slow)',
     labelsPath: './models/model30chan18cls/labels.json',
     colorsPath: './models/model30chan18cls/colorLUT.json',
+    colormapPath: './models/model30chan18cls/colormap.json',
     preModelId: null, // Model run first e.g.  crop the brain  { null, 1, 2, ..  }
     preModelPostProcess: false, // If true, perform postprocessing to remove noisy regions after preModel inference generate output.
     isBatchOverlapEnable: false, // create extra overlap batches for inference
@@ -154,6 +159,7 @@ const inferenceModelsList = [
     modelName: '\u{1FA93} Subcortical + GWM (Low Mem, Faster)',
     labelsPath: './models/model18cls/labels.json',
     colorsPath: './models/model18cls/colorLUT.json',
+    colormapPath: './models/model18cls/colormap.json',
     preModelId: null, // model run first e.g.  Brain_Extraction  { null, 1, 2, ..  }
     preModelPostProcess: false, // If true, perform postprocessing to remove noisy regions after preModel inference generate output.
     isBatchOverlapEnable: false, // create extra overlap batches for inference
@@ -179,6 +185,7 @@ const inferenceModelsList = [
     modelName: '\u{1F52A}\u{1FA93} Subcortical + GWM (Failsafe, Less Acc)',
     labelsPath: './models/model30chan18cls/labels.json',
     colorsPath: './models/model30chan18cls/colorLUT.json',
+    colormapPath: './models/model30chan18cls/colormap.json',
     preModelId: 1, // model run first e.g.  Brain_Extraction  { null, 1, 2, ..  }
     preModelPostProcess: false, // If true, perform postprocessing to remove noisy regions after preModel inference generate output.
     isBatchOverlapEnable: false, // create extra overlap batches for inference
@@ -204,6 +211,7 @@ const inferenceModelsList = [
     modelName: '\u{1F52A} Aparc+Aseg 50 (High Mem, Fast)',
     labelsPath: './models/model30chan50cls/labels.json',
     colorsPath: './models/model30chan50cls/colorLUT.json',
+    colormapPath: './models/model30chan50cls/colormap.json',
     preModelId: 1, // Model run first e.g.  crop the brain  { null, 1, 2, ..  }
     preModelPostProcess: false, // If true, perform postprocessing to remove noisy regions after preModel inference generate output.
     isBatchOverlapEnable: false, // create extra overlap batches for inference
@@ -229,6 +237,7 @@ const inferenceModelsList = [
     modelName: '\u{1F52A} Aparc+Aseg 50 (Low Mem, Slow)',
     labelsPath: './models/model30chan50cls/labels.json',
     colorsPath: './models/model30chan50cls/colorLUT.json',
+    colormapPath: './models/model30chan50cls/colormap.json',
     preModelId: 1, // Model run first e.g.  crop the brain  { null, 1, 2, ..  }
     preModelPostProcess: false, // If true, perform postprocessing to remove noisy regions after preModel inference generate output.
     isBatchOverlapEnable: false, // create extra overlap batches for inference
@@ -247,6 +256,7 @@ const inferenceModelsList = [
     description:
       'This is a 50-class model, that segments the brain into the Aparc+Aseg Freesurfer Atlas but one where cortical homologues are merged into a single class. The model use sequential convolution for inference to overcome browser memory limitations but leads to longer computation time.'
   },
+  // './models/model5_gw_ae/colorLUT.json',
   {
     id: 10,
     type: 'Brain_Extraction',
@@ -260,7 +270,7 @@ const inferenceModelsList = [
     numOverlapBatches: 0, // Number of extra overlap batches for inference
     enableTranspose: true, // Keras and tfjs input orientation may need a tranposing step to be matched
     enableCrop: true, // For speed-up inference, crop brain from background before feeding to inference model to lower memory use.
-    cropPadding: 2, // Padding size add to cropped brain
+    cropPadding: 18, // Padding size add to cropped brain
     autoThreshold: 0, // Threshold between 0 and 1, given no preModel and tensor is normalized either min-max or by quantiles. Will remove noisy voxels around brain
     enableQuantileNorm: false, // Some models needs Quantile Normaliztion.
     filterOutWithPreMask: false, // Can be used to multiply final output with premodel output mask to crean noisy areas
@@ -278,13 +288,13 @@ const inferenceModelsList = [
     modelName: '\u{1F52A} Extract the Brain (High Acc, Slow)',
     labelsPath: null,
     colorsPath: null,
-    preModelId: 1, // Model run first e.g.  crop the brain  { null, 1, 2, ..  }
+    preModelId: null, // Model run first e.g.  crop the brain  { null, 1, 2, ..  }
     preModelPostProcess: false, // If true, perform postprocessing to remove noisy regions after preModel inference generate output.
     isBatchOverlapEnable: false, // create extra overlap batches for inference
     numOverlapBatches: 0, // Number of extra overlap batches for inference
     enableTranspose: true, // Keras and tfjs input orientation may need a tranposing step to be matched
     enableCrop: true, // For speed-up inference, crop brain from background before feeding to inference model to lower memory use.
-    cropPadding: 2, // Padding size add to cropped brain
+    cropPadding: 0, // Padding size add to cropped brain
     autoThreshold: 0, // Threshold between 0 and 1, given no preModel and tensor is normalized either min-max or by quantiles. Will remove noisy voxels around brain
     enableQuantileNorm: false, // Some models needs Quantile Normaliztion.
     filterOutWithPreMask: false, // Can be used to multiply final output with premodel output mask to crean noisy areas
@@ -303,13 +313,14 @@ const inferenceModelsList = [
     modelName: '\u26A1 Brain Mask (FAST)',
     labelsPath: null,
     colorsPath: null,
+    colormapPath: './models/model5_gw_ae/colormap.json',
     preModelId: null, // Model run first e.g.  crop the brain  { null, 1, 2, ..  }
     preModelPostProcess: false, // If true, perform postprocessing to remove noisy regions after preModel inference generate output.
     isBatchOverlapEnable: false, // create extra overlap batches for inference
     numOverlapBatches: 0, // Number of extra overlap batches for inference
     enableTranspose: true, // Keras and tfjs input orientation may need a tranposing step to be matched
     enableCrop: true, // For speed-up inference, crop brain from background before feeding to inference model to lower memory use.
-    cropPadding: 2, // Padding size add to cropped brain
+    cropPadding: 17, // Padding size add to cropped brain
     autoThreshold: 0, // Threshold between 0 and 1, given no preModel and tensor is normalized either min-max or by quantiles. Will remove noisy voxels around brain
     enableQuantileNorm: false, // Some models needs Quantile Normaliztion.
     filterOutWithPreMask: false, // Can be used to multiply final output with premodel output mask to crean noisy areas
@@ -327,15 +338,15 @@ const inferenceModelsList = [
     modelName: '\u{1F52A} Brain Mask (High Acc, Low Mem)',
     labelsPath: null,
     colorsPath: null,
-    preModelId: 1, // Model run first e.g.  crop the brain  { null, 1, 2, ..  }
+    preModelId: null, // Model run first e.g.  crop the brain  { null, 1, 2, ..  }
     preModelPostProcess: false, // If true, perform postprocessing to remove noisy regions after preModel inference generate output.
     isBatchOverlapEnable: false, // create extra overlap batches for inference
     numOverlapBatches: 0, // Number of extra overlap batches for inference
     enableTranspose: true, // Keras and tfjs input orientation may need a tranposing step to be matched
     enableCrop: true, // For speed-up inference, crop brain from background before feeding to inference model to lower memory use.
-    cropPadding: 2, // Padding size add to cropped brain
+    cropPadding: 0, // Padding size add to cropped brain
     autoThreshold: 0, // Threshold between 0 and 1, given no preModel and tensor is normalized either min-max or by quantiles. Will remove noisy voxels around brain
-    enableQuantileNorm: false, // Some models needs Quantile Normaliztion.
+    enableQuantileNorm: true, // Some models needs Quantile Normaliztion.
     filterOutWithPreMask: false, // Can be used to multiply final output with premodel output mask to crean noisy areas
     enableSeqConv: true, // For low memory system and low configuration, enable sequential convolution instead of last layer
     textureSize: 0, // Requested Texture size for the model, if unknown can be 0.
@@ -352,6 +363,7 @@ const inferenceModelsList = [
     modelName: '\u{1F52A} Aparc+Aseg 104 (High Mem, Fast)',
     labelsPath: './models/model21_104class/labels.json',
     colorsPath: './models/model21_104class/colorLUT.json',
+    colormapPath: './models/model21_104class/colormap.json',
     preModelId: 1, // model run first e.g.  Brain_Extraction  { null, 1, 2, ..  }
     preModelPostProcess: false, // If true, perform postprocessing to remove noisy regions after preModel inference generate output.
     isBatchOverlapEnable: false, // create extra overlap batches for inference
@@ -377,6 +389,7 @@ const inferenceModelsList = [
     modelName: '\u{1F52A} Aparc+Aseg 104 (Low Mem, Slow)',
     labelsPath: './models/model21_104class/labels.json',
     colorsPath: './models/model21_104class/colorLUT.json',
+    colormapPath: './models/model21_104class/colormap.json',
     preModelId: 1, // model run first e.g.  Brain_Extraction  { null, 1, 2, ..  }
     preModelPostProcess: false, // If true, perform postprocessing to remove noisy regions after preModel inference generate output.
     isBatchOverlapEnable: false, // create extra overlap batches for inference
@@ -395,7 +408,7 @@ const inferenceModelsList = [
     description:
       'FreeSurfer aparc+aseg atlas 104 parcellate brain areas into 104 regions. It contains a combination of the Desikan-Killiany atlas for cortical area and also segmentation of subcortical regions. The model use sequential convolution for inference to overcome browser memory limitations but leads to longer computation time. '
   }
-] // inferenceModelsListX
+] // inferenceModelsList
 
 async function checkZero(timeValue) {
   return timeValue < 10 ? timeValue : '0' + timeValue
@@ -728,12 +741,6 @@ async function minMaxNormalizeVolumeData(volumeData) {
   return normalizedSlices_3d
 }
 
-async function findArrayMax(array) {
-  return array.reduce((e1, e2) => {
-    return e1 > e2 ? e1 : e2
-  })
-}
-
 async function inferenceFullVolumeSeqCovLayer(
   model,
   slices_3d,
@@ -970,7 +977,8 @@ async function generateBrainMask(
   modelEntry,
   opts,
   callbackUI,
-  callbackImg
+  callbackImg,
+  isFinalImage = true
 ) {
   console.log('Generate Brain Masking ... ')
   // Convert all slices into 1 Dim array to download
@@ -1030,9 +1038,10 @@ async function generateBrainMask(
       brainOut.push.apply(brainOut, allSlices[sliceIdx])
     }*/
   }
-
-  callbackImg(brainOut, opts, modelEntry)
-  callbackUI('Segmentation finished', 0)
+  if (isFinalImage || opts.showPhase1Output) {//all done
+    callbackImg(brainOut, opts, modelEntry)
+    callbackUI('Segmentation finished', 0)
+  }
   return tf.tensor(brainOut, [num_of_slices, slice_height, slice_width])
 }
 
@@ -1239,7 +1248,7 @@ class SequentialConvLayer {
       const seqTimer = window.setInterval(async function () {
         tf.engine().startScope() // Start TensorFlow.js scope
         console.log('=======================')
-        const memoryInfo0 = tf.memory()
+        const memoryInfo0 = await tf.memory()
         console.log(`| Number of Tensors: ${memoryInfo0.numTensors}`)
         console.log(`| Number of Data Buffers: ${memoryInfo0.numDataBuffers}`)
         console.log('Channel : ', chIdx)
@@ -1264,20 +1273,12 @@ class SequentialConvLayer {
           return [newoutC, newoutB]
         })
 
-        // -- await showMemStatus(chIdx, self.outChannels);
-
-        const memoryInfo1 = tf.memory()
-        console.log(`| Number of Tensors: ${memoryInfo1.numTensors}`)
-        console.log(`| Number of Data Buffers: ${memoryInfo1.numDataBuffers}`)
         console.log('=======================')
-
-        // Log memory usage
-
-        const memoryInfo = tf.memory()
+        const memoryInfo = await tf.memory()
         self.callbackUI(`Iteration ${chIdx}`, chIdx / self.outChannels)
         console.log(`Number of Tensors: ${memoryInfo.numTensors}`)
         console.log(`Number of Data Buffers: ${memoryInfo.numDataBuffers}`)
-        console.log(`Bytes In Use: ${memoryInfo.numBytes}`)
+        
         console.log(`Megabytes In Use: ${(memoryInfo.numBytes / 1048576).toFixed(3)} MB`)
         if (memoryInfo.unreliable) {
           console.log(`Unreliable: ${memoryInfo.unreliable}`)
@@ -1634,16 +1635,6 @@ async function inferenceFullVolumeSeqCovLayerPhase2(
             3
           ) // important for memory use
         }
-
-        // // Log memory usage
-        // const memoryInfo = tf.memory();
-        // console.log(`Iteration ${i}:`);
-        // console.log(`Number of Tensors: ${memoryInfo.numTensors}`);
-        // console.log(`Number of Data Buffers: ${memoryInfo.numDataBuffers}`);
-        // console.log(`Bytes In Use: ${memoryInfo.numBytes}`);
-        // console.log(`Megabytes In Use: ${(memoryInfo.numBytes / 1048576).toFixed(3)} MB`);
-        // console.log(`Unreliable: ${memoryInfo.unreliable}`);
-
         tf.dispose(curTensor[i - 1])
       } catch (err) {
         // ? original code provided special dialog for shaders if( err.message === "Failed to compile fragment shader.") {
@@ -1718,8 +1709,7 @@ async function inferenceFullVolumeSeqCovLayerPhase2(
         const Inference_t = ((performance.now() - startTime) / 1000).toFixed(4)
 
         console.log(' find array max ')
-        const curBatchMaxLabel = await findArrayMax(Array.from(outputTensor.dataSync()))
-
+        const curBatchMaxLabel = await outputTensor.max().dataSync()[0]
         if (maxLabelPredicted < curBatchMaxLabel) {
           maxLabelPredicted = curBatchMaxLabel
         }
@@ -1815,9 +1805,6 @@ async function inferenceFullVolumeSeqCovLayerPhase2(
         }
         const Postprocess_t = ((performance.now() - startTime) / 1000).toFixed(4)
 
-        // document.getElementById("progressBar").style.width = 0;
-        tf.engine().disposeVariables()
-
         console.log(
           'Processing the whole brain volume in tfjs for multi-class output mask took : ',
           ((performance.now() - inferenceStartTime) / 1000).toFixed(4) + '  Seconds'
@@ -1831,8 +1818,9 @@ async function inferenceFullVolumeSeqCovLayerPhase2(
         if (opts.telemetryFlag) {
           await submitTiming2GoogleSheet(statData, callbackUI)
         }
-        callbackImg(outimg, opts, modelEntry)
         callbackUI('Segmentation finished', 0)
+        callbackImg(outimg, opts, modelEntry)
+        return 0
       } else {
         i++
       }
@@ -2194,10 +2182,7 @@ async function inferenceFullVolumePhase2(
         // outputDataBeforArgmx = Array.from(prediction_argmax.dataSync())
         tf.dispose(curTensor[i])
         // allPredictions.push({"id": allBatches[j].id, "coordinates": allBatches[j].coordinates, "data": Array.from(prediction_argmax.dataSync()) })
-        console.log(' find array max ')
-        // ???? await
-        const curBatchMaxLabel = await findArrayMax(Array.from(prediction_argmax.dataSync()))
-
+        const curBatchMaxLabel = await prediction_argmax.max().dataSync()[0]
         if (maxLabelPredicted < curBatchMaxLabel) {
           maxLabelPredicted = curBatchMaxLabel
         }
@@ -2316,8 +2301,9 @@ async function inferenceFullVolumePhase2(
           submitTiming2GoogleSheet(statData, callbackUI)
         }
         clearInterval(timer)
-        callbackImg(outimg, opts, modelEntry)
         callbackUI('Segmentation finished', 0)
+        callbackImg(outimg, opts, modelEntry)
+        return 0
       }
       i++
     }, delay)
@@ -2351,7 +2337,6 @@ async function inferenceFullVolumePhase1(
   statData.No_SubVolumes = 1
   // load pre-model for inference first, can be null if no pre-model such as GWM models
   if (modelEntry.preModelId) {
-    // let preModel = await load_model(inferenceModelsList[ modelEntry["preModelId"] - 1]['path'] )
     const preModel = await load_model(inferenceModelsList[modelEntry.preModelId - 1].path)
     const transpose = inferenceModelsList[modelEntry.preModelId - 1].enableTranspose
     const quantileNorm = inferenceModelsList[modelEntry.preModelId - 1].enableQuantileNorm
@@ -2374,7 +2359,7 @@ async function inferenceFullVolumePhase1(
     // -- Transpose MRI data to be match pytorch/keras input output
     // -- Check if pre-model needs transpose..
     if (transpose) {
-      preModel_slices_3d = preModel_slices_3d.transpose()
+      preModel_slices_3d = await preModel_slices_3d.transpose()
       console.log('Input transposed for pre-model')
     } else {
       console.log('Transpose not enabled for pre-model')
@@ -2584,8 +2569,7 @@ async function inferenceFullVolumePhase1(
           tf.dispose(curTensor[i])
 
           console.log(' Pre-model find array max ')
-          const curBatchMaxLabel = await findArrayMax(Array.from(prediction_argmax.dataSync()))
-
+          const curBatchMaxLabel = await prediction_argmax.max().dataSync()[0]
           if (maxLabelPredicted < curBatchMaxLabel) {
             maxLabelPredicted = curBatchMaxLabel
           }
@@ -2619,7 +2603,8 @@ async function inferenceFullVolumePhase1(
               modelEntry,
               opts,
               callbackUI,
-              callbackImg
+              callbackImg,
+              false
             )
             await tf.dispose(outLabelVolume)
             console.log(' Phase-1 num of tensors after generateBrainMask: ', tf.memory().numTensors)
@@ -2688,13 +2673,14 @@ async function inferenceFullVolumePhase1(
                   statData,
                   niftiImage
                 )
+                return 0
                 // inferenceFullVolumeSeqCovLayerPhase2(model, slices_3d.transpose(), num_of_slices, slice_height, slice_width, slices_3d_mask)
               } else {
                 // Mask cropping BUT no seq conv
                 console.log('------ Mask Cropping  -  NO Seq Convoluton ------')
                 // ? await
                 // todo output not used outimg = await
-                inferenceFullVolumePhase2(
+                await inferenceFullVolumePhase2(
                   model,
                   slices_3d,
                   num_of_slices,
@@ -2712,7 +2698,7 @@ async function inferenceFullVolumePhase1(
               }
             } else {
               // -- In version 3.0.0 this function not used
-              inferenceSubVolumes(model, slices_3d, num_of_slices, slice_height, slice_width, slices_3d_mask)
+              await inferenceSubVolumes(model, slices_3d, num_of_slices, slice_height, slice_width, slices_3d_mask)
               // inferenceSubVolumes(model, slices_3d.transpose(), num_of_slices, slice_height, slice_width, slices_3d_mask)
             }
           }

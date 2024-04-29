@@ -6,9 +6,7 @@ export class BWLabeler {
   } // idx()
 
   // determine if voxels below candidate voxel have already been assigned a label
-  check_previous_slice(bw, il, r, c, sl, dim, conn, tt) {
-    // const nabo: number[] = [];
-    const nabo = new Uint32Array(27)
+  check_previous_slice(bw, il, r, c, sl, dim, conn, tt, nabo, tn) {
     let nr_set = 0
     if (!sl) {
       return 0
@@ -73,7 +71,7 @@ export class BWLabeler {
       }
     }
     if (nr_set) {
-      this.fill_tratab(tt, nabo, nr_set)
+      this.fill_tratab(tt, nabo, nr_set, tn)
       return nabo[0]
     } else {
       return 0
@@ -82,6 +80,8 @@ export class BWLabeler {
 
   // provisionally label all voxels in volume
   do_initial_labelling(bw, dim, conn) {
+    const naboPS = new Uint32Array(27)
+    const tn = new Uint32Array(27 + 5)
     let label = 1
     const kGrowArrayBy = 8192
     let ttn = kGrowArrayBy
@@ -96,7 +96,7 @@ export class BWLabeler {
           if (val === 0) {
             continue
           }
-          nabo[0] = this.check_previous_slice(bw, il, r, c, sl, dim, conn, tt)
+          nabo[0] = this.check_previous_slice(bw, il, r, c, sl, dim, conn, tt, naboPS, tn)
           if (nabo[0]) {
             nr_set += 1
           }
@@ -130,7 +130,7 @@ export class BWLabeler {
           }
           if (nr_set) {
             il[this.idx(r, c, sl, dim)] = nabo[0]
-            this.fill_tratab(tt, nabo, nr_set)
+            this.fill_tratab(tt, nabo, nr_set, tn)
           } else {
             il[this.idx(r, c, sl, dim)] = label
             if (label >= ttn) {
@@ -156,9 +156,8 @@ export class BWLabeler {
   } // do_initial_labelling()
 
   // translation table unifies a region that has been assigned multiple classes
-  fill_tratab(tt, nabo, nr_set) {
+  fill_tratab(tt, nabo, nr_set, tn) {
     let cntr = 0
-    const tn = new Uint32Array(nr_set + 5).fill(0)
     const INT_MAX = 2147483647
     let ltn = INT_MAX
     for (let i = 0; i < nr_set; i++) {
