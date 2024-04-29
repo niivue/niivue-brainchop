@@ -13,7 +13,6 @@ async function main() {
   nv1.opts.multiplanarForceRender = true
   nv1.opts.yoke3Dto2DZoom = true
   await nv1.loadVolumes([{ url: "./t1_crop.nii.gz" }])
-
   aboutBtn.onclick = function () {
     window.alert("BrainChop models https://github.com/neuroneural/brainchop")
   }
@@ -32,14 +31,18 @@ async function main() {
     nv1.removeVolume(nv1.volumes[0])
     nv1.addVolume(nii2)
   }
-
+  async function closeAllOverlays() {
+    while (nv1.volumes.length > 1) {
+      await nv1.removeVolume(nv1.volumes[1])
+    }
+  }
   modelSelect.onchange = async function () {
+    await closeAllOverlays()
     await ensureConformed()
     let model = inferenceModelsList[this.selectedIndex]
     let opts = brainChopOpts
     runInference(opts, model, nv1.volumes[0].hdr, nv1.volumes[0].img, callbackImg, callbackUI)
   }
-
   saveBtn.onclick = function () {
     nv1.volumes[1].saveToDisk("Custom.nii")
   }
@@ -49,9 +52,7 @@ async function main() {
     return js
   }
   async function callbackImg(img, opts, modelEntry) {
-    while (nv1.volumes.length > 1) {
-      await nv1.removeVolume(nv1.volumes[1])
-    }
+    closeAllOverlays()
     let overlayVolume = await nv1.volumes[0].clone()
     overlayVolume.zeroImage()
     overlayVolume.hdr.scl_inter = 0

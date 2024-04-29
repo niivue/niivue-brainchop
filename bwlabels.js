@@ -80,8 +80,8 @@ export class BWLabeler {
 
   // provisionally label all voxels in volume
   do_initial_labelling(bw, dim, conn) {
-    const naboPS = new Uint32Array(27)
-    const tn = new Uint32Array(27 + 5)
+    const naboPS = new Uint32Array(32)
+    const tn = new Uint32Array(32)
     let label = 1
     const kGrowArrayBy = 8192
     let ttn = kGrowArrayBy
@@ -157,19 +157,20 @@ export class BWLabeler {
 
   // translation table unifies a region that has been assigned multiple classes
   fill_tratab(tt, nabo, nr_set, tn) {
-    let cntr = 0
+    // let cntr = 0
+    tn.fill(0)
     const INT_MAX = 2147483647
     let ltn = INT_MAX
     for (let i = 0; i < nr_set; i++) {
       let j = nabo[i]
-      cntr = 0
+      // cntr = 0
       while (tt[j - 1] !== j) {
         j = tt[j - 1]
-        cntr++
+        /* cntr++
         if (cntr > 100) {
           console.log('\nOoh no!!')
           break
-        }
+        } */
       }
       tn[i] = j
       ltn = Math.min(ltn, j)

@@ -1682,12 +1682,7 @@ async function inferenceFullVolumeSeqCovLayerPhase2(
         const seqConvLayer = await new SequentialConvLayer(res, 10, isChannelLast, callbackUI)
 
         // Apply the last output tensor to the seq. instance
-        let outputTensor = null
-        const profileInfo = await tf.profile(async () => {
-          // Your tensor operations here
-          outputTensor = await seqConvLayer.apply(curTensor[i])
-        })
-        console.log('profileInfo : ', profileInfo)
+        let outputTensor = await seqConvLayer.apply(curTensor[i])
 
         // -- document.getElementById("progressBarChild").style.width = 0 + "%";;
 
@@ -2048,7 +2043,6 @@ async function inferenceFullVolumePhase2(
     // ???? subsequent await are required
     const timer = window.setInterval(async function () {
       try {
-        // -- curTensor[i] = res.layers[i].apply( curTensor[i-1])
         curTensor[i] = res.layers[i].apply(curTensor[i - 1])
       } catch (err) {
         callbackUI(err.message, -1, err.message)
@@ -2081,10 +2075,6 @@ async function inferenceFullVolumePhase2(
 
       if (i === layersLength - 1) {
         window.clearInterval(timer)
-
-        // prediction = res.layers[res.layers.length-1].apply(curTensor[i])
-        // curTensor[i].print()
-        // outputDataBeforArgmx = Array.from(curTensor[i].dataSync())
 
         const axis = isChannelLast ? -1 : 1
         console.log(' find argmax ')

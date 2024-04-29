@@ -10,7 +10,7 @@
   },
   "dependencies": {
     "@niivue/niivue":"^0.42.0",
-    "@tensorflow/tfjs": "3.9.0",
+    "@tensorflow/tfjs": "^4.18.0",
     "gl-matrix": "^3.4.3"
   },
   "devDependencies": {
