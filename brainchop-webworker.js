@@ -1,598 +1,24 @@
 import * as tf from '@tensorflow/tfjs'
 import { BWLabeler } from './bwlabels.js'
-export { runInference, inferenceModelsList, brainChopOpts }
+import { inferenceModelsList } from "./brainchop-parameters.js"
 
-const brainChopOpts = {
-  // General settings for input shape [batchSize, batch_D, batch_H, batch_W, numOfChan]
-  batchSize: 1, // How many batches are used during each inference iteration
-  numOfChan: 1, // num of channel of the input shape
-  isColorEnable: true, // If false, grey scale will enabled
-  isAutoColors: true, // If false, manualColorsRange will be in use
-  bgLabelValue: 0, // Semenatic Segmentation background label value
-  drawBoundingVolume: false, // plot bounding volume used to crop the brain
-  isBrainCropMaskBased: true, // Check if brain masking will be used for cropping & optional show or brain tissue will be used
-  showPhase1Output: false, // This will load to papaya the output of phase-1 (ie. brain mask or brain tissue)
-  isPostProcessEnable: true, // If true 3D Connected Components filter will apply
-  isContoursViewEnable: false, // If true 3D contours of the labeled regions will apply
-  browserArrayBufferMaxZDim: 30, // This value depends on Memory available
-  telemetryFlag: false, // Ethical and transparent collection of browser usage while adhering to security and privacy standards
-  chartXaxisStepPercent: 10, // percent from total labels on Xaxis
-  uiSampleName: 'BC_UI_Sample', // Sample name used by interface
-  atlasSelectedColorTable: 'Fire' // Select from ["Hot-and-Cold", "Fire", "Grayscale", "Gold", "Spectrum"]
-}
-
-// Inference Models, the ids must start from 1 in sequence
-const inferenceModelsList = [
-  {
-    id: 1,
-    type: 'Segmentation',
-    path: './models/model5_gw_ae/model.json',
-    modelName: '\u26A1 Tissue GWM (light)',
-    labelsPath: './models/model5_gw_ae/labels.json',
-    colorsPath: './models/model5_gw_ae/colorLUT.json',
-    colormapPath: './models/model5_gw_ae/colormap3.json',
-    preModelId: null, // Model run first e.g.  crop the brain   { null, 1, 2, ..  }
-    preModelPostProcess: false, // If true, perform postprocessing to remove noisy regions after preModel inference generate output.
-    isBatchOverlapEnable: false, // create extra overlap batches for inference
-    numOverlapBatches: 0, // Number of extra overlap batches for inference
-    enableTranspose: true, // Keras and tfjs input orientation may need a tranposing step to be matched
-    enableCrop: true, // For speed-up inference, crop brain from background before feeding to inference model to lower memory use.
-    cropPadding: 18, // Padding size add to cropped brain
-    autoThreshold: 0, // Threshold between 0 and 1, given no preModel and tensor is normalized either min-max or by quantiles. Will remove noisy voxels around brain
-    enableQuantileNorm: false, // Some models needs Quantile Normaliztion.
-    filterOutWithPreMask: false, // Can be used to multiply final output with premodel output mask to crean noisy areas
-    enableSeqConv: false, // For low memory system and low configuration, enable sequential convolution instead of last layer
-    textureSize: 0, // Requested Texture size for the model, if unknown can be 0.
-    warning: null, // Warning message to show when select the model.
-    inferenceDelay: 100, // Delay in ms time while looping layers applying.
-    description:
-      'Gray and white matter segmentation model. Operates on full T1 image in a single pass, but uses only 5 filters per layer. Can work on integrated graphics cards but is barely large enough to provide good accuracy. Still more accurate than the subvolume model.'
-  },
-  {
-    id: 2,
-    type: 'Segmentation',
-    path: './models/model20chan3cls/model.json',
-    modelName: '\u{1F52A} Tissue GWM (High Acc)',
-    labelsPath: './models/model20chan3cls/labels.json',
-    colorsPath: './models/model20chan3cls/colorLUT.json',
-    colormapPath: './models/model20chan3cls/colormap.json',
-    preModelId: null, // Model run first e.g.  crop the brain   { null, 1, 2, ..  }
-    preModelPostProcess: false, // If true, perform postprocessing to remove noisy regions after preModel inference generate output.
-    isBatchOverlapEnable: false, // create extra overlap batches for inference
-    numOverlapBatches: 0, // Number of extra overlap batches for inference
-    enableTranspose: true, // Keras and tfjs input orientation may need a tranposing step to be matched
-    enableCrop: true, // For speed-up inference, crop brain from background before feeding to inference model to lower memory use.
-    cropPadding: 0, // Padding size add to cropped brain
-    autoThreshold: 0.2, // Threshold between 0 and 1, given no preModel and tensor is normalized either min-max or by quantiles. Will remove noisy voxels around brain
-    enableQuantileNorm: true, // Some models needs Quantile Normaliztion.
-    filterOutWithPreMask: false, // Can be used to multiply final output with premodel output mask to crean noisy areas
-    enableSeqConv: false, // For low memory system and low configuration, enable sequential convolution instead of last layer
-    textureSize: 0, // Requested Texture size for the model, if unknown can be 0.
-    warning:
-      "This model may need dedicated graphics card.  For more info please check with Browser Resources <i class='fa fa-cogs'></i>.",
-    inferenceDelay: 100, // Delay in ms time while looping layers applying.
-    description:
-      'Gray and white matter segmentation model. Operates on full T1 image in a single pass but needs a dedicated graphics card to operate. Provides the best accuracy with hard cropping for better speed'
-  },
-  {
-    id: 3,
-    type: 'Segmentation',
-    path: './models/model20chan3cls/model.json',
-    modelName: '\u{1F52A} Tissue GWM (High Acc, Low Mem)',
-    labelsPath: './models/model20chan3cls/labels.json',
-    colorsPath: './models/model20chan3cls/colorLUT.json',
-    colormapPath: './models/model20chan3cls/colormap.json',
-    preModelId: null, // Model run first e.g.  crop the brain   { null, 1, 2, ..  }
-    preModelPostProcess: false, // If true, perform postprocessing to remove noisy regions after preModel inference generate output.
-    isBatchOverlapEnable: false, // create extra overlap batches for inference
-    numOverlapBatches: 0, // Number of extra overlap batches for inference
-    enableTranspose: true, // Keras and tfjs input orientation may need a tranposing step to be matched
-    enableCrop: true, // For speed-up inference, crop brain from background before feeding to inference model to lower memory use.
-    cropPadding: 0, // Padding size add to cropped brain
-    autoThreshold: 0.2, // Threshold between 0 and 1, given no preModel and tensor is normalized either min-max or by quantiles. Will remove noisy voxels around brain
-    enableQuantileNorm: true, // Some models needs Quantile Normaliztion.
-    filterOutWithPreMask: false, // Can be used to multiply final output with premodel output mask to crean noisy areas
-    enableSeqConv: true, // For low memory system and low configuration, enable sequential convolution instead of last layer
-    textureSize: 0, // Requested Texture size for the model, if unknown can be 0.
-    warning:
-      "This model may need dedicated graphics card.  For more info please check with Browser Resources <i class='fa fa-cogs'></i>.",
-    inferenceDelay: 100, // Delay in ms time while looping layers applying.
-    description:
-      'Gray and white matter segmentation model. Operates on full T1 image in a single pass but needs a dedicated graphics card to operate. Provides high accuracy and fit low memory available but slower'
-  },
-  {
-    id: 4,
-    type: 'Atlas',
-    path: './models/model30chan18cls/model.json',
-    modelName: '\u{1FA93} Subcortical + GWM (High Mem, Fast)',
-    labelsPath: './models/model30chan18cls/labels.json',
-    colorsPath: './models/model30chan18cls/colorLUT.json',
-    colormapPath: './models/model30chan18cls/colormap.json',
-    preModelId: null, // Model run first e.g.  crop the brain  { null, 1, 2, ..  }
-    preModelPostProcess: false, // If true, perform postprocessing to remove noisy regions after preModel inference generate output.
-    isBatchOverlapEnable: false, // create extra overlap batches for inference
-    numOverlapBatches: 200, // Number of extra overlap batches for inference
-    enableTranspose: true, // Keras and tfjs input orientation may need a tranposing step to be matched
-    enableCrop: true, // For speed-up inference, crop brain from background before feeding to inference model to lower memory use.
-    cropPadding: 0, // Padding size add to cropped brain
-    autoThreshold: 0.2, // Threshold between 0 and 1, given no preModel and tensor is normalized either min-max or by quantiles. Will remove noisy voxels around brain
-    enableQuantileNorm: false, // Some models needs Quantile Normaliztion.
-    filterOutWithPreMask: false, // Can be used to multiply final output with premodel output mask to crean noisy areas
-    enableSeqConv: false, // For low memory system and low configuration, enable sequential convolution instead of last layer
-    textureSize: 0, // Requested Texture size for the model, if unknown can be 0.
-    warning:
-      "This model may need dedicated graphics card.  For more info please check with Browser Resources <i class='fa fa-cogs'></i>.", // Warning message to show when select the model.
-    inferenceDelay: 100, // Delay in ms time while looping layers applying.
-    description:
-      'Parcellation of the brain into 17 regions: gray and white matter plus subcortical areas. This is a robust model able to handle range of data quality, including varying saturation, and even clinical scans. It may work on infant brains, but your mileage may vary.'
-  },
-  {
-    id: 5,
-    type: 'Atlas',
-    path: './models/model30chan18cls/model.json',
-    modelName: '\u{1FA93} Subcortical + GWM (Low Mem, Slow)',
-    labelsPath: './models/model30chan18cls/labels.json',
-    colorsPath: './models/model30chan18cls/colorLUT.json',
-    colormapPath: './models/model30chan18cls/colormap.json',
-    preModelId: null, // Model run first e.g.  crop the brain  { null, 1, 2, ..  }
-    preModelPostProcess: false, // If true, perform postprocessing to remove noisy regions after preModel inference generate output.
-    isBatchOverlapEnable: false, // create extra overlap batches for inference
-    numOverlapBatches: 200, // Number of extra overlap batches for inference
-    enableTranspose: true, // Keras and tfjs input orientation may need a tranposing step to be matched
-    enableCrop: true, // For speed-up inference, crop brain from background before feeding to inference model to lower memory use.
-    cropPadding: 0, // Padding size add to cropped brain
-    autoThreshold: 0.2, // Threshold between 0 and 1, given no preModel and tensor is normalized either min-max or by quantiles. Will remove noisy voxels around brain
-    enableQuantileNorm: false, // Some models needs Quantile Normaliztion.
-    filterOutWithPreMask: false, // Can be used to multiply final output with premodel output mask to crean noisy areas
-    enableSeqConv: true, // For low memory system and low configuration, enable sequential convolution instead of last layer
-    textureSize: 0, // Requested Texture size for the model, if unknown can be 0.
-    warning:
-      "This model may need dedicated graphics card.  For more info please check with Browser Resources <i class='fa fa-cogs'></i>.", // Warning message to show when select the model.
-    inferenceDelay: 100, // Delay in ms time while looping layers applying.
-    description:
-      'Parcellation of the brain into 17 regions: gray and white matter plus subcortical areas. This is a robust model able to handle range of data quality, including varying saturation, and even clinical scans. It may work on infant brains, but your mileage may vary.'
-  },
-  {
-    id: 6,
-    type: 'Atlas',
-    path: './models/model18cls/model.json',
-    modelName: '\u{1FA93} Subcortical + GWM (Low Mem, Faster)',
-    labelsPath: './models/model18cls/labels.json',
-    colorsPath: './models/model18cls/colorLUT.json',
-    colormapPath: './models/model18cls/colormap.json',
-    preModelId: null, // model run first e.g.  Brain_Extraction  { null, 1, 2, ..  }
-    preModelPostProcess: false, // If true, perform postprocessing to remove noisy regions after preModel inference generate output.
-    isBatchOverlapEnable: false, // create extra overlap batches for inference
-    numOverlapBatches: 200, // Number of extra overlap batches for inference
-    enableTranspose: true, // Keras and tfjs input orientation may need a tranposing step to be matched
-    enableCrop: true, // For speed-up inference, crop brain from background before feeding to inference model to lower memory use.
-    cropPadding: 0, // Padding size add to cropped brain
-    autoThreshold: 0.2, // Threshold between 0 and 1, given no preModel and tensor is normalized either min-max or by quantiles. Will remove noisy voxels around brain
-    enableQuantileNorm: false, // Some models needs Quantile Normaliztion.
-    filterOutWithPreMask: false, // Can be used to multiply final output with premodel output mask to crean noisy areas
-    enableSeqConv: true, // For low memory system and low configuration, enable sequential convolution instead of last layer
-    textureSize: 0, // Requested Texture size for the model, if unknown can be 0.
-    warning:
-      "This model may need dedicated graphics card.  For more info please check with Browser Resources <i class='fa fa-cogs'></i>.", // Warning message to show when select the model.
-    inferenceDelay: 100, // Delay in ms time while looping layers applying.
-    description:
-      'Parcellation of the brain into 17 regions: gray and white matter plus subcortical areas. This is a robust model able to handle range of data quality, including varying saturation, and even clinical scans. It may work on infant brains, but your mileage may vary.'
-  },
-  {
-    id: 7,
-    type: 'Atlas',
-    path: './models/model30chan18cls/model.json',
-    modelName: '\u{1F52A}\u{1FA93} Subcortical + GWM (Failsafe, Less Acc)',
-    labelsPath: './models/model30chan18cls/labels.json',
-    colorsPath: './models/model30chan18cls/colorLUT.json',
-    colormapPath: './models/model30chan18cls/colormap.json',
-    preModelId: 1, // model run first e.g.  Brain_Extraction  { null, 1, 2, ..  }
-    preModelPostProcess: false, // If true, perform postprocessing to remove noisy regions after preModel inference generate output.
-    isBatchOverlapEnable: false, // create extra overlap batches for inference
-    numOverlapBatches: 200, // Number of extra overlap batches for inference
-    enableTranspose: true, // Keras and tfjs input orientation may need a tranposing step to be matched
-    enableCrop: true, // For speed-up inference, crop brain from background before feeding to inference model to lower memory use.
-    cropPadding: 0, // Padding size add to cropped brain
-    autoThreshold: 0, // Threshold between 0 and 1, given no preModel and tensor is normalized either min-max or by quantiles. Will remove noisy voxels around brain
-    enableQuantileNorm: false, // Some models needs Quantile Normaliztion.
-    filterOutWithPreMask: false, // Can be used to multiply final output with premodel output mask to crean noisy areas
-    enableSeqConv: false, // For low memory system and low configuration, enable sequential convolution instead of last layer
-    textureSize: 0, // Requested Texture size for the model, if unknown can be 0.
-    warning:
-      "This model may need dedicated graphics card.  For more info please check with Browser Resources <i class='fa fa-cogs'></i>.", // Warning message to show when select the model.
-    inferenceDelay: 100, // Delay in ms time while looping layers applying.
-    description:
-      'Parcellation of the brain into 17 regions: gray and white matter plus subcortical areas. This is not a robust model, it may work on low data quality, including varying saturation, and even clinical scans. It may work also on infant brains, but your mileage may vary.'
-  },
-  {
-    id: 8,
-    type: 'Atlas',
-    path: './models/model30chan50cls/model.json',
-    modelName: '\u{1F52A} Aparc+Aseg 50 (High Mem, Fast)',
-    labelsPath: './models/model30chan50cls/labels.json',
-    colorsPath: './models/model30chan50cls/colorLUT.json',
-    colormapPath: './models/model30chan50cls/colormap.json',
-    preModelId: 1, // Model run first e.g.  crop the brain  { null, 1, 2, ..  }
-    preModelPostProcess: false, // If true, perform postprocessing to remove noisy regions after preModel inference generate output.
-    isBatchOverlapEnable: false, // create extra overlap batches for inference
-    numOverlapBatches: 200, // Number of extra overlap batches for inference
-    enableTranspose: true, // Keras and tfjs input orientation may need a tranposing step to be matched
-    enableCrop: true, // For speed-up inference, crop brain from background before feeding to inference model to lower memory use.
-    cropPadding: 0, // Padding size add to cropped brain
-    autoThreshold: 0, // Threshold between 0 and 1, given no preModel and tensor is normalized either min-max or by quantiles. Will remove noisy voxels around brain
-    enableQuantileNorm: true, // Some models needs Quantile Normaliztion.
-    filterOutWithPreMask: false, // Can be used to multiply final output with premodel output mask to crean noisy areas
-    enableSeqConv: false, // For low memory system and low configuration, enable sequential convolution instead of last layer
-    textureSize: 0, // Requested Texture size for the model, if unknown can be 0.
-    warning:
-      "This model may need dedicated graphics card.  For more info please check with Browser Resources <i class='fa fa-cogs'></i>.", // Warning message to show when select the model.
-    inferenceDelay: 100, // Delay in ms time while looping layers applying.
-    description:
-      'This is a 50-class model, that segments the brain into the Aparc+Aseg Freesurfer Atlas but one where cortical homologues are merged into a single class.'
-  },
-  {
-    id: 9,
-    type: 'Atlas',
-    path: './models/model30chan50cls/model.json',
-    modelName: '\u{1F52A} Aparc+Aseg 50 (Low Mem, Slow)',
-    labelsPath: './models/model30chan50cls/labels.json',
-    colorsPath: './models/model30chan50cls/colorLUT.json',
-    colormapPath: './models/model30chan50cls/colormap.json',
-    preModelId: 1, // Model run first e.g.  crop the brain  { null, 1, 2, ..  }
-    preModelPostProcess: false, // If true, perform postprocessing to remove noisy regions after preModel inference generate output.
-    isBatchOverlapEnable: false, // create extra overlap batches for inference
-    numOverlapBatches: 200, // Number of extra overlap batches for inference
-    enableTranspose: true, // Keras and tfjs input orientation may need a tranposing step to be matched
-    enableCrop: true, // For speed-up inference, crop brain from background before feeding to inference model to lower memory use.
-    cropPadding: 0, // Padding size add to cropped brain
-    autoThreshold: 0, // Threshold between 0 and 1, given no preModel and tensor is normalized either min-max or by quantiles. Will remove noisy voxels around brain
-    enableQuantileNorm: true, // Some models needs Quantile Normaliztion.
-    filterOutWithPreMask: false, // Can be used to multiply final output with premodel output mask to crean noisy areas
-    enableSeqConv: true, // For low memory system and low configuration, enable sequential convolution instead of last laye
-    textureSize: 0, // Requested Texture size for the model, if unknown can be 0.
-    warning:
-      "This model may need dedicated graphics card.  For more info please check with Browser Resources <i class='fa fa-cogs'></i>.", // Warning message to show when select the model.
-    inferenceDelay: 100, // Delay in ms time while looping layers applying.
-    description:
-      'This is a 50-class model, that segments the brain into the Aparc+Aseg Freesurfer Atlas but one where cortical homologues are merged into a single class. The model use sequential convolution for inference to overcome browser memory limitations but leads to longer computation time.'
-  },
-  // './models/model5_gw_ae/colorLUT.json',
-  {
-    id: 10,
-    type: 'Brain_Extraction',
-    path: './models/model5_gw_ae/model.json',
-    modelName: '\u26A1 Extract the Brain (FAST)',
-    labelsPath: null,
-    colorsPath: null,
-    preModelId: null, // Model run first e.g.  crop the brain  { null, 1, 2, ..  }
-    preModelPostProcess: false, // If true, perform postprocessing to remove noisy regions after preModel inference generate output.
-    isBatchOverlapEnable: false, // create extra overlap batches for inference
-    numOverlapBatches: 0, // Number of extra overlap batches for inference
-    enableTranspose: true, // Keras and tfjs input orientation may need a tranposing step to be matched
-    enableCrop: true, // For speed-up inference, crop brain from background before feeding to inference model to lower memory use.
-    cropPadding: 18, // Padding size add to cropped brain
-    autoThreshold: 0, // Threshold between 0 and 1, given no preModel and tensor is normalized either min-max or by quantiles. Will remove noisy voxels around brain
-    enableQuantileNorm: false, // Some models needs Quantile Normaliztion.
-    filterOutWithPreMask: false, // Can be used to multiply final output with premodel output mask to crean noisy areas
-    enableSeqConv: false, // For low memory system and low configuration, enable sequential convolution instead of last layer
-    textureSize: 0, // Requested Texture size for the model, if unknown can be 0.
-    warning: null, // Warning message to show when select the model.
-    inferenceDelay: 100, // Delay in ms time while looping layers applying.
-    description:
-      'Extract the brain fast model operates on full T1 image in a single pass, but uses only 5 filters per layer. Can work on integrated graphics cards but is barely large enough to provide good accuracy. Still more accurate than the failsafe version.'
-  },
-  {
-    id: 11,
-    type: 'Brain_Extraction',
-    path: './models/model11_gw_ae/model.json',
-    modelName: '\u{1F52A} Extract the Brain (High Acc, Slow)',
-    labelsPath: null,
-    colorsPath: null,
-    preModelId: null, // Model run first e.g.  crop the brain  { null, 1, 2, ..  }
-    preModelPostProcess: false, // If true, perform postprocessing to remove noisy regions after preModel inference generate output.
-    isBatchOverlapEnable: false, // create extra overlap batches for inference
-    numOverlapBatches: 0, // Number of extra overlap batches for inference
-    enableTranspose: true, // Keras and tfjs input orientation may need a tranposing step to be matched
-    enableCrop: true, // For speed-up inference, crop brain from background before feeding to inference model to lower memory use.
-    cropPadding: 0, // Padding size add to cropped brain
-    autoThreshold: 0, // Threshold between 0 and 1, given no preModel and tensor is normalized either min-max or by quantiles. Will remove noisy voxels around brain
-    enableQuantileNorm: false, // Some models needs Quantile Normaliztion.
-    filterOutWithPreMask: false, // Can be used to multiply final output with premodel output mask to crean noisy areas
-    enableSeqConv: true, // For low memory system and low configuration, enable sequential convolution instead of last layer
-    textureSize: 0, // Requested Texture size for the model, if unknown can be 0.
-    warning:
-      "This model may need dedicated graphics card.  For more info please check with Browser Resources <i class='fa fa-cogs'></i>.",
-    inferenceDelay: 100, // Delay in ms time while looping layers applying.
-    description:
-      'Extract the brain high accuracy model operates on full T1 image in a single pass, but uses only 11 filters per layer. Can work on dedicated graphics cards. Still more accurate than the fast version.'
-  },
-  {
-    id: 12,
-    type: 'Brain_Masking',
-    path: './models/model5_gw_ae/model.json',
-    modelName: '\u26A1 Brain Mask (FAST)',
-    labelsPath: null,
-    colorsPath: null,
-    colormapPath: './models/model5_gw_ae/colormap.json',
-    preModelId: null, // Model run first e.g.  crop the brain  { null, 1, 2, ..  }
-    preModelPostProcess: false, // If true, perform postprocessing to remove noisy regions after preModel inference generate output.
-    isBatchOverlapEnable: false, // create extra overlap batches for inference
-    numOverlapBatches: 0, // Number of extra overlap batches for inference
-    enableTranspose: true, // Keras and tfjs input orientation may need a tranposing step to be matched
-    enableCrop: true, // For speed-up inference, crop brain from background before feeding to inference model to lower memory use.
-    cropPadding: 17, // Padding size add to cropped brain
-    autoThreshold: 0, // Threshold between 0 and 1, given no preModel and tensor is normalized either min-max or by quantiles. Will remove noisy voxels around brain
-    enableQuantileNorm: false, // Some models needs Quantile Normaliztion.
-    filterOutWithPreMask: false, // Can be used to multiply final output with premodel output mask to crean noisy areas
-    enableSeqConv: false, // For low memory system and low configuration, enable sequential convolution instead of last layer
-    textureSize: 0, // Requested Texture size for the model, if unknown can be 0.
-    warning: null, // Warning message to show when select the model.
-    inferenceDelay: 100, // Delay in ms time while looping layers applying.
-    description:
-      'This fast masking model operates on full T1 image in a single pass, but uses only 5 filters per layer. Can work on integrated graphics cards but is barely large enough to provide good accuracy. Still more accurate than failsafe version.'
-  },
-  {
-    id: 13,
-    type: 'Brain_Masking',
-    path: './models/model11_gw_ae/model.json',
-    modelName: '\u{1F52A} Brain Mask (High Acc, Low Mem)',
-    labelsPath: null,
-    colorsPath: null,
-    preModelId: null, // Model run first e.g.  crop the brain  { null, 1, 2, ..  }
-    preModelPostProcess: false, // If true, perform postprocessing to remove noisy regions after preModel inference generate output.
-    isBatchOverlapEnable: false, // create extra overlap batches for inference
-    numOverlapBatches: 0, // Number of extra overlap batches for inference
-    enableTranspose: true, // Keras and tfjs input orientation may need a tranposing step to be matched
-    enableCrop: true, // For speed-up inference, crop brain from background before feeding to inference model to lower memory use.
-    cropPadding: 0, // Padding size add to cropped brain
-    autoThreshold: 0, // Threshold between 0 and 1, given no preModel and tensor is normalized either min-max or by quantiles. Will remove noisy voxels around brain
-    enableQuantileNorm: true, // Some models needs Quantile Normaliztion.
-    filterOutWithPreMask: false, // Can be used to multiply final output with premodel output mask to crean noisy areas
-    enableSeqConv: true, // For low memory system and low configuration, enable sequential convolution instead of last layer
-    textureSize: 0, // Requested Texture size for the model, if unknown can be 0.
-    warning:
-      "This model may need dedicated graphics card.  For more info please check with Browser Resources <i class='fa fa-cogs'></i>.",
-    inferenceDelay: 100, // Delay in ms time while looping layers applying.
-    description:
-      'This masking model operates on full T1 image in a single pass, but uses 11 filters per layer. Can work on dedicated graphics cards. Still more accurate than fast version.'
-  },
-  {
-    id: 14,
-    type: 'Atlas',
-    path: './models/model21_104class/model.json',
-    modelName: '\u{1F52A} Aparc+Aseg 104 (High Mem, Fast)',
-    labelsPath: './models/model21_104class/labels.json',
-    colorsPath: './models/model21_104class/colorLUT.json',
-    colormapPath: './models/model21_104class/colormap.json',
-    preModelId: 1, // model run first e.g.  Brain_Extraction  { null, 1, 2, ..  }
-    preModelPostProcess: false, // If true, perform postprocessing to remove noisy regions after preModel inference generate output.
-    isBatchOverlapEnable: false, // create extra overlap batches for inference
-    numOverlapBatches: 200, // Number of extra overlap batches for inference
-    enableTranspose: true, // Keras and tfjs input orientation may need a tranposing step to be matched
-    enableCrop: true, // For speed-up inference, crop brain from background before feeding to inference model to lower memory use.
-    cropPadding: 0, // Padding size add to cropped brain
-    autoThreshold: 0, // Threshold between 0 and 1, given no preModel and tensor is normalized either min-max or by quantiles. Will remove noisy voxels around brain
-    enableQuantileNorm: false, // Some models needs Quantile Normaliztion.
-    filterOutWithPreMask: false, // Can be used to multiply final output with premodel output mask to crean noisy areas
-    enableSeqConv: false, // For low memory system and low configuration, enable sequential convolution instead of last layer
-    textureSize: 0, // Requested Texture size for the model, if unknown can be 0.
-    warning:
-      "This model may need dedicated graphics card.  For more info please check with Browser Resources <i class='fa fa-cogs'></i>.", // Warning message to show when select the model.
-    inferenceDelay: 100, // Delay in ms time while looping layers applying.
-    description:
-      'FreeSurfer aparc+aseg atlas 104 parcellate brain areas into 104 regions. It contains a combination of the Desikan-Killiany atlas for cortical area and also segmentation of subcortical regions.'
-  },
-  {
-    id: 15,
-    type: 'Atlas',
-    path: './models/model21_104class/model.json',
-    modelName: '\u{1F52A} Aparc+Aseg 104 (Low Mem, Slow)',
-    labelsPath: './models/model21_104class/labels.json',
-    colorsPath: './models/model21_104class/colorLUT.json',
-    colormapPath: './models/model21_104class/colormap.json',
-    preModelId: 1, // model run first e.g.  Brain_Extraction  { null, 1, 2, ..  }
-    preModelPostProcess: false, // If true, perform postprocessing to remove noisy regions after preModel inference generate output.
-    isBatchOverlapEnable: false, // create extra overlap batches for inference
-    numOverlapBatches: 200, // Number of extra overlap batches for inference
-    enableTranspose: true, // Keras and tfjs input orientation may need a tranposing step to be matched
-    enableCrop: true, // For speed-up inference, crop brain from background before feeding to inference model to lower memory use.
-    cropPadding: 0, // Padding size add to cropped brain
-    autoThreshold: 0, // Threshold between 0 and 1, given no preModel and tensor is normalized either min-max or by quantiles. Will remove noisy voxels around brain
-    enableQuantileNorm: false, // Some models needs Quantile Normaliztion.
-    filterOutWithPreMask: false, // Can be used to multiply final output with premodel output mask to crean noisy areas
-    enableSeqConv: true, // For low memory system and low configuration, enable sequential convolution instead of last layer
-    textureSize: 0, // Requested Texture size for the model, if unknown can be 0.
-    warning:
-      "This model may need dedicated graphics card.  For more info please check with Browser Resources <i class='fa fa-cogs'></i>.", // Warning message to show when select the model.
-    inferenceDelay: 100, // Delay in ms time while looping layers applying.
-    description:
-      'FreeSurfer aparc+aseg atlas 104 parcellate brain areas into 104 regions. It contains a combination of the Desikan-Killiany atlas for cortical area and also segmentation of subcortical regions. The model use sequential convolution for inference to overcome browser memory limitations but leads to longer computation time. '
-  }
-] // inferenceModelsList
-
-async function checkZero(timeValue) {
-  return timeValue < 10 ? timeValue : '0' + timeValue
-}
-
-async function detectBrowser() {
-  if (navigator.userAgent.indexOf('OPR/') > -1) {
-    return 'Opera'
-  } else if (navigator.userAgent.indexOf('Edg/') > -1) {
-    return 'Edge'
-  } else if (navigator.userAgent.indexOf('Falkon/') > -1) {
-    return 'Falkon'
-  } else if (navigator.userAgent.indexOf('Chrome/') > -1) {
-    return 'Chrome'
-  } else if (navigator.userAgent.indexOf('Firefox/') > -1) {
-    return 'Firefox'
-  } else if (navigator.userAgent.indexOf('Safari/') > -1) {
-    return 'Safari'
-  } else if (navigator.userAgent.indexOf('MSIE/') > -1 || navigator.userAgent.indexOf('rv:') > -1) {
-    return 'IExplorer'
-  } else {
-    return 'Unknown'
-  }
-}
-
-async function detectBrowserVersion() {
-  if (navigator.userAgent.indexOf('OPR/') > -1) {
-    return parseInt(navigator.userAgent.split('OPR/')[1])
-  } else if (navigator.userAgent.indexOf('Edg/') > -1) {
-    return parseInt(navigator.userAgent.split('Edg/')[1])
-  } else if (navigator.userAgent.indexOf('Falkon/') > -1) {
-    return parseInt(navigator.userAgent.split('Falkon/')[1])
-  } else if (navigator.userAgent.indexOf('Chrome/') > -1) {
-    return parseInt(navigator.userAgent.split('Chrome/')[1])
-  } else if (navigator.userAgent.indexOf('Firefox/') > -1) {
-    return parseInt(navigator.userAgent.split('Firefox/')[1])
-  } else if (navigator.userAgent.indexOf('Safari/') > -1) {
-    return parseInt(navigator.userAgent.split('Safari/')[1])
-  } else if (navigator.userAgent.indexOf('MSIE/') > -1 || navigator.userAgent.indexOf('rv:') > -1) {
-    return parseInt(navigator.userAgent.split('MSIE/')[1])
-  } else {
-    return Infinity
-  }
-}
-
-async function detectOperatingSys() {
-  if (navigator.userAgent.indexOf('Win') > -1) {
-    return 'Windows'
-  } else if (navigator.userAgent.indexOf('Mac') > -1) {
-    return 'MacOS'
-  } else if (navigator.userAgent.indexOf('Linux') > -1) {
-    return 'Linux'
-  } else if (navigator.userAgent.indexOf('UNIX') > -1) {
-    return 'UNIX'
-  } else {
-    return 'Unknown'
-  }
-}
-
-async function checkWebGl2(callbackUI) {
-  const gl = document.createElement('canvas').getContext('webgl2')
-  if (!gl) {
-    if (typeof WebGL2RenderingContext !== 'undefined') {
-      const msg = 'WebGL2 may be disabled. Please try updating video card drivers'
-      callbackUI(msg, -1, msg)
-    } else {
-      console.log('WebGL2 is not supported')
-    }
-    return false
-  } else {
-    console.log('WebGl2 is enabled')
-    return true
-  }
-}
-
-async function detectGPUVendor() {
-  const gl = document.createElement('canvas').getContext('webgl')
-  let debugInfo
-  if (gl) {
-    debugInfo = gl.getExtension('WEBGL_debug_renderer_info')
-    if (debugInfo) {
-      const result = gl.getParameter(debugInfo.UNMASKED_VENDOR_WEBGL)
-      // --e.g. : NVIDIA Corporation
-      if (result.indexOf('(') > -1 && result.indexOf(')') > -1) {
-        return result.substring(result.indexOf('(') + 1, result.indexOf(')'))
+function wcallbackUI(message = "", progressFrac = -1, modalMessage = "", statData = []) {
+  let statStr = []
+  if (Object.keys(statData).length > 0) {
+    function arrayToStr(array) {
+          let list = {};
+            for (var key in statData){
+                list[key] =  statData[key]
+            }
+          return JSON.stringify(list);
       }
-      return result
-    }
+      statStr = arrayToStr(statData)
   }
-  return null
+  self.postMessage({cmd : "ui", message : message, progressFrac: progressFrac, modalMessage: modalMessage, statData: statStr})
 }
 
-async function detectGPUVendor_v0() {
-  const gl = document.createElement('canvas').getContext('webgl')
-
-  if (gl) {
-    const debugInfo = gl.getExtension('WEBGL_debug_renderer_info')
-    return debugInfo ? gl.getParameter(debugInfo.UNMASKED_VENDOR_WEBGL) : null
-  } else {
-    return null
-  }
-}
-
-async function detectGPUCardType_v0() {
-  const gl = document.createElement('canvas').getContext('webgl')
-  if (gl) {
-    if (detectBrowser() === 'Firefox') {
-      // -- return e.g: "GeForce GTX 980/PCIe/SSE2"
-      return gl.getParameter(gl.RENDERER)
-    }
-
-    const debugInfo = gl.getExtension('WEBGL_debug_renderer_info')
-    return debugInfo ? gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL) : null
-  } else {
-    return null
-  }
-}
-
-async function detectGPUCardType() {
-  const gl = document.createElement('canvas').getContext('webgl')
-  let debugInfo
-
-  if (gl) {
-    if (detectBrowser() === 'Firefox') {
-      // -- return e.g: "GeForce GTX 980/PCIe/SSE2"
-      return gl.getParameter(gl.RENDERER)
-    }
-
-    debugInfo = gl.getExtension('WEBGL_debug_renderer_info')
-
-    if (debugInfo) {
-      let result = gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL)
-      // --e.g. : ANGLE (NVIDIA Corporation, GeForce GTX 1050 Ti/PCIe/SSE2, OpenGL 4.5.0 NVIDIA 390.144) as with Chrome
-      // Or:  GeForce GTX 1050 Ti/PCIe/SSE2    as with fireFox
-
-      if (result.indexOf('(') > -1 && result.indexOf(')') > -1 && result.indexOf('(R)') === -1) {
-        result = result.substring(result.indexOf('(') + 1, result.indexOf(')'))
-
-        if (result.split(',').length === 3) {
-          return result.split(',')[1].trim()
-        }
-      }
-
-      return result
-    }
-  }
-  return null
-}
-
-async function getCPUNumCores() {
-  return navigator.hardwareConcurrency
-}
-
-async function isChrome() {
-  return /Chrome/.test(navigator.userAgent) && /Google Inc/.test(navigator.vendor)
-}
-
-async function submitTiming2GoogleSheet(dataObj, callbackUI) {
-  if (navigator.onLine) {
-    const msg = 'Telemetry not yet supported'
-    callbackUI(msg, -1, msg)
-    console.log(dataObj)
-
-    /*
-    // -- Fill form with data to submit
-    Object.keys(dataObj).forEach(dataKey =>{
-         document.getElementById(dataKey).value = dataObj[dataKey];
-    })
-    //-- Settings of submission
-    const scriptURL = 'https://script.google.com/macros/s/AKfycbwn-Ix6IVGOwUSU1VBU8hFcABT9PqwCwN90UxfK_fXp5CEfxvIoQHZXs2XQRZQo_N8I/exec'
-    const form = document.forms['google-sheet']
-    //-- Add event handler to the form.
-    form.addEventListener('submit', e => {
-          e.preventDefault()
-          fetch(scriptURL, { method: 'POST', body: new FormData(form)})
-            .then(response => console.log("------Done------"))
-            .catch(error => console.error('Error!', error.message))
-    })
-    //-- Submit the form
-    document.getElementById("SubmitStatisticalData").click();
-    */
-  } else {
-    console.log(' Offline Mode ')
-  }
+function wcallbackImg(img, opts, modelEntry) {
+  self.postMessage({cmd : "img", img : img, opts: opts, modelEntry: modelEntry})
 }
 
 async function getModelNumParameters(modelObj) {
@@ -750,7 +176,7 @@ async function inferenceFullVolumeSeqCovLayer(
   slice_height,
   slice_width
 ) {
-  window.alert('inferenceFullVolumeSeqCovLayer() is not dead code?')
+  callbackUI(msg, -1, 'inferenceFullVolumeSeqCovLayer() is not dead code?')
 }
 
 async function inferenceFullVolume(
@@ -762,145 +188,43 @@ async function inferenceFullVolume(
   slice_height,
   slice_width
 ) {
-  window.alert('inferenceFullVolume() is not dead code?')
+  wcallbackUI('',-1, 'inferenceFullVolume() is not dead code?')
 }
 
 async function inferenceSubVolumes(model, slices_3d, num_of_slices, slice_height, slice_width, pipeline1_out = null) {
-  window.alert('inferenceSubVolumes() is not dead code?')
+  wcallbackUI('', -1, 'inferenceSubVolumes() is not dead code?')
 }
 
 async function tensor2LightBuffer(tensor, dtype) {
-  window.alert('tensor2LightBuffer() is not dead code?')
-  // return new Buffer(tensor.shape, dtype, Array.from(tensor.dataSync()) );
+  wcallbackUI('', -1, 'tensor2LightBuffer() is not dead code?')
 }
 
-async function draw3dObjBoundingVolume(unstackOutVolumeTensor) {
-  window.alert('draw3dObjBoundingVolume() is not dead code?')
-  /*
-  console.log("Plot cropped  volume shape ... ");
-  // Convert all slices into 1 Dim array to download
-  
-  let allOutputSlices3DCC = [];
-  let allOutputSlices3DContours = [];
-  
-  
+async function draw3dObjBoundingVolume(unstackOutVolumeTensor, opts, modelEntry) {
+  let allOutputSlices3DCC = []
+  let allOutputSlices3DContours = []
+
   // dataSync() using to flatten array. Takes around 1.5 s
   for(let sliceTensorIdx = 0; sliceTensorIdx < unstackOutVolumeTensor.length; sliceTensorIdx++ ) {
-    allOutputSlices3DCC[sliceTensorIdx] = Array.from(unstackOutVolumeTensor[sliceTensorIdx].dataSync());
+        allOutputSlices3DCC[sliceTensorIdx] = Array.from(unstackOutVolumeTensor[sliceTensorIdx].dataSync())
   }
-  
-  // if(false) { // Enable contour for overlay option
-  //     // Remove noisy regions using 3d CC
-  //     let sliceWidth = niftiHeader.dims[1];
-  //     let sliceHeight = niftiHeader.dims[2];
-  //     allOutputSlices3DCC = findVolumeContours(allOutputSlices3DCC, sliceHeight, sliceWidth, 2 );
-  // }
-  
-  let allOutputSlices3DCC1DimArray = [];
-  // Use this conversion to download output slices as nii file. Takes around 0.5 s
-  for(let sliceIdx = 0; sliceIdx < allOutputSlices3DCC.length; sliceIdx++ ) {
-    allOutputSlices3DCC1DimArray.push.apply(allOutputSlices3DCC1DimArray, allOutputSlices3DCC[sliceIdx]);
+
+  // Use this conversion to download output slices as nii file. Takes around 30 ms
+  // does not use `push` to avoid stack overflows. In future: consider .set() with typed arrays
+  const allOutputSlices3DCC1DimArray = new Array(allOutputSlices3DCC[0].length * allOutputSlices3DCC.length)
+  let index = 0
+  for (let sliceIdx = 0; sliceIdx < allOutputSlices3DCC.length; sliceIdx++) {
+      for (let i = 0; i < allOutputSlices3DCC[sliceIdx].length; i++) {
+          allOutputSlices3DCC1DimArray[index++] = allOutputSlices3DCC[sliceIdx][i]
+      }
   }
-  
   console.log("Done with allOutputSlices3DCC1DimArray ")
-  
-  let  brainOut = [];
-  
-  
-  let brainMaskTensor1d =  binarizeVolumeDataTensor(tf.tensor1d(allOutputSlices3DCC1DimArray));
-  brainOut = Array.from(brainMaskTensor1d.dataSync());
-  
-  
-  // labelArrayBuffer = createNiftiOutArrayBuffer(rawNiftiData, brainExtractionData1DimArr);
-  let labelArrayBuffer = createNiftiOutArrayBuffer(rawNiftiData, brainOut);
-  
-  TODO Papaa specific code? 
-  if(true) { // flag to not draw for now
-    if(opts.isColorEnable) {
-        let blob = new Blob([labelArrayBuffer], {type: "application/octet-binary;charset=utf-8"});
-        let file = new File([blob], "temp.nii");
-        params_label["files"] = [file];
-        params_label[file["name"]] = {lut: "Grayscale", interpolation: false};
-
-    } else {
-        params_label["binaryImages"] = [labelArrayBuffer];
-    }
-
-    // Set the view of container-2 as container-1
-    params_label["mainView"] = papayaContainers[0].viewer.mainImage.sliceDirection == 1? "axial" :
-                               papayaContainers[0].viewer.mainImage.sliceDirection == 2? "coronal" : "sagittal";
-
-
-    papaya.Container.resetViewer(1, params_label);
-    papayaContainers[1].viewer.screenVolumes[0].alpha = 0.2;  // 0 to 1 screenVolumes[0] is first image loaded in Labels viewer
-    papayaContainers[1].viewer.drawViewer(true, false);
-
-
-    // To sync swap view button
-    document.getElementById(PAPAYA_CONTROL_MAIN_SWAP_BUTTON_CSS + papayaContainers[0].containerIndex).addEventListener("click", function(){
-          papayaContainers[1].viewer.rotateViews()
-
-    })
-
-    document.getElementById(PAPAYA_CONTROL_MAIN_SWAP_BUTTON_CSS + papayaContainers[1].containerIndex).addEventListener("click", function(){
-          papayaContainers[0].viewer.rotateViews()
-
-      })
-    
-  }
-  */
+  let brainMaskTensor1d = await binarizeVolumeDataTensor(tf.tensor1d(allOutputSlices3DCC1DimArray))
+  let brainOut = Array.from(brainMaskTensor1d.dataSync())
+  wcallbackImg(brainOut, opts, modelEntry)
 }
 
 async function argMaxLarge(outVolumeBuffer, num_of_slices, slice_height, slice_width, numOfClasses, dtype = 'float32') {
-  window.alert('argMaxLarge() is not dead code?')
-  /*
-  if( findMinNumOfArrBufs(num_of_slices, slice_height, slice_width, numOfClasses, dtype) == 1) {
-
-     // console.log("Convert output tensor to buffer");
-    // reshape modelOutTensor.shape  : [ 1, 256, 256, 256, 3 ] to [ 256, 256, 256, 3 ]
-    //-- let outVolumeBuffer = tensor2Buffer(modelOutTensor.relu().reshape([num_of_slices, slice_height, slice_width, numOfClasses]));
-
-    //-- let  outVolumeBuffer = tensor2Buffer(modelOutTensor.reshape([num_of_slices, slice_height, slice_width, numOfClasses]));
-    //-- let  outVolumeBuffer = tensor2LightBuffer(modelOutTensor.reshape([num_of_slices, slice_height, slice_width, numOfClasses]), dtype);
-
-    console.log("Start argMaxLarge for  buffer  with last axis -1")
-
-    let outBuffer = tf.buffer([num_of_slices, slice_height, slice_width ], dtype=tf.float32);
-
-    for(let depthIdx = 0; depthIdx < num_of_slices; depthIdx += 1) {
-        for(let rowIdx = 0; rowIdx < slice_height; rowIdx += 1) {
-            for(let colIdx = 0; colIdx < slice_width; colIdx += 1) {
-                // index of buffer with max Freq or max number so the index of that buffer is the right concensus label
-                let indexOfMaxVotedBuffer = -1;
-                // let maxVoxelValue = -Infinity;
-                let maxVoxelValue = -1000000;
-
-                for(let bufferIdx = 0; bufferIdx < numOfClasses; bufferIdx += 1) {
-                    //Requested out of range element at 1,0,0,0.   Buffer shape=1,256,256,256,3
-                    let voxelValue = outVolumeBuffer.get(depthIdx, rowIdx, colIdx, bufferIdx );
-
-                    if(maxVoxelValue <= voxelValue) {
-                          maxVoxelValue = voxelValue;
-                          indexOfMaxVotedBuffer = bufferIdx;
-                    }
-                }
-
-                outBuffer.set(indexOfMaxVotedBuffer, depthIdx, rowIdx, colIdx);
-
-            }
-        }
-    }
-
-    console.log("argMaxLarge for buffer ..Done");
-
-    return outBuffer.toTensor();
-
-  } else {
-     console.log(" Terminated due to browser memory limitation (TODO: callbackUI)");
-     console.log("argMaxLarge needs buffer division .. ");
-     return 0;
-  }
-  */
+  wcallbackUI('', -1, 'argMaxLarge() is not dead code?')
 }
 
 async function addZeroPaddingTo3dTensor(tensor3d, rowPadArr = [1, 1], colPadArr = [1, 1], depthPadArr = [1, 1]) {
@@ -955,13 +279,13 @@ async function applyMriThreshold(tensor, percentage) {
 
     // Thresholding (assuming background has very low values compared to the head)
     const mask = dataForProcessing.greater(threshold[0])
-    // -- const denoisedMriData = dataForProcessing.mul(mask);
+    // -- const denoisedMriData = dataForProcessing.mul(mask)
 
     // No need to  manually dispose dataForProcessing and mask, as tf.tidy() will dispose them auto.
     return mask
   })
 
-  // -- return denoisedMriData;
+  // -- return denoisedMriData
 }
 
 async function binarizeVolumeDataTensor(volumeDataTensor) {
@@ -969,6 +293,7 @@ async function binarizeVolumeDataTensor(volumeDataTensor) {
   // element-wise: (x > 0 ? 1 : alpha * x );  e.g. Tenosr [0, 0.9, 0.8, -3] => Tensor [0, 1, 1, 0]
   return volumeDataTensor.step(alpha)
 }
+
 async function generateBrainMask(
   unstackOutVolumeTensor,
   num_of_slices,
@@ -978,6 +303,8 @@ async function generateBrainMask(
   opts,
   callbackUI,
   callbackImg,
+  niftiHeader, 
+  niftiImage,
   isFinalImage = true
 ) {
   console.log('Generate Brain Masking ... ')
@@ -991,7 +318,7 @@ async function generateBrainMask(
     allOutputSlices3DCC[sliceTensorIdx] = Array.from(unstackOutVolumeTensor[sliceTensorIdx].dataSync())
   }
   const isPreModelPostProcessEnable = modelEntry.preModelPostProcess
-  // let isPreModelPostProcessEnable = inferenceModelsList[$$("selectModel").getValue() - 1]["preModelPostProcess"];
+  // let isPreModelPostProcessEnable = inferenceModelsList[$$("selectModel").getValue() - 1]["preModelPostProcess"]
 
   if (isPreModelPostProcessEnable) {
     console.log('Phase-1 Post processing enabled ... ')
@@ -1010,46 +337,38 @@ async function generateBrainMask(
   // Use this conversion to download output slices as nii file. Takes around 30 ms
   // does not use `push` to avoid stack overflows. In future: consider .set() with typed arrays
   const allOutputSlices3DCC1DimArray = new Array(allOutputSlices3DCC[0].length * allOutputSlices3DCC.length)
-  let index = 0;
+  let index = 0
   for (let sliceIdx = 0; sliceIdx < allOutputSlices3DCC.length; sliceIdx++) {
       for (let i = 0; i < allOutputSlices3DCC[sliceIdx].length; i++) {
-          allOutputSlices3DCC1DimArray[index++] = allOutputSlices3DCC[sliceIdx][i];
+          allOutputSlices3DCC1DimArray[index++] = allOutputSlices3DCC[sliceIdx][i]
       }
   }
   let brainOut = []
-
   if (opts.isBrainCropMaskBased) {
     //  Mask-based
-
     const brainMaskTensor1d = await binarizeVolumeDataTensor(tf.tensor1d(allOutputSlices3DCC1DimArray))
     brainOut = Array.from(brainMaskTensor1d.dataSync())
-  } else {
-    //  Brain tissue
-    window.alert('getAllSlicesData1D() is not dead code? niftiHeader and niftiImage required by getAllSlicesData1D')
-    /*const allSlices = getAllSlicesData1D(num_of_slices, niftiHeader, niftiImage)
-    for (let sliceIdx = 0; sliceIdx < allOutputSlices3DCC.length; sliceIdx++) {
-      for (let pixelIdx = 0; pixelIdx < slice_height * slice_width; pixelIdx++) {
-        // Filter smaller regions original MRI data
-        if (allOutputSlices3DCC[sliceIdx][pixelIdx] === 0) {
-          allSlices[sliceIdx][pixelIdx] = 0
-        }
-      }
-
-      brainOut.push.apply(brainOut, allSlices[sliceIdx])
-    }*/
+  } else { //  Brain tissue
+    let allSlices = await getAllSlicesData1D(num_of_slices, niftiHeader, niftiImage)
+    brainOut = new Array(niftiHeader.dims[1] * niftiHeader.dims[2] * niftiHeader.dims[3])
+    let idx = 0
+    for(let sliceIdx = 0; sliceIdx < allOutputSlices3DCC.length; sliceIdx++ ) {
+      for(let pixelIdx = 0; pixelIdx < (slice_height * slice_width); pixelIdx++) {
+           //Filter smaller regions original MRI data
+           if(allOutputSlices3DCC[sliceIdx][pixelIdx] == 0) {
+              allSlices[sliceIdx][pixelIdx] = 0
+           }
+           brainOut[idx++] = allSlices[sliceIdx][pixelIdx]
+       }
+    }
   }
   if (isFinalImage || opts.showPhase1Output) {//all done
     callbackImg(brainOut, opts, modelEntry)
-    callbackUI('Segmentation finished', 0)
   }
   return tf.tensor(brainOut, [num_of_slices, slice_height, slice_width])
 }
 
 async function convByOutputChannelAndInputSlicing(input, filter, biases, stride, pad, dilationRate, sliceSize) {
-  // const batchSize = input.shape[0]
-  // const depth = input.shape[1]
-  // const height = input.shape[2]
-  // const width = input.shape[3]
   const inChannels = input.shape[4]
   const outChannels = filter.shape[4]
 
@@ -1170,7 +489,7 @@ class SequentialConvLayer {
     this.outChannels = model.outputLayers[0].kernel.shape[4]
     this.chunkSize = chunkSize
     this.isChannelLast = isChannelLast
-    this.callbackUI = callbackUI // fork
+    this.callbackUI = callbackUI
   }
 
   /**
@@ -1178,7 +497,7 @@ class SequentialConvLayer {
     * @since 3.0.0
     * @member SequentialConvLayer
     * @param {tf.Tensor}  inputTensor  e.g.  [ 1, 256, 256, 256, 5 ]
-    * @return {promise}
+    * @return {outC}
     *
     * convLayer.rank -> 3
     * typeof(convLayer) -> "object"
@@ -1223,9 +542,7 @@ class SequentialConvLayer {
     // Important to avoid "undefined" class var members inside the timer.
     // "this" has another meaning inside the timer.
 
-    // document.getElementById("progressBarChild").parentElement.style.visibility = "visible";
-
-    return new Promise((resolve) => {
+    // document.getElementById("progressBarChild").parentElement.style.visibility = "visible"
       const startTime = performance.now()
 
       const convLayer = self.model.layers[self.model.layers.length - 1]
@@ -1242,10 +559,10 @@ class SequentialConvLayer {
       // -- e.g. outC.shape  [256,256,256]
       let chIdx = 0
 
-      // console.log("---------------------------------------------------------");
+      // console.log("---------------------------------------------------------")
       console.log(' channel loop')
 
-      const seqTimer = window.setInterval(async function () {
+      while (true) {
         tf.engine().startScope() // Start TensorFlow.js scope
         console.log('=======================')
         const memoryInfo0 = await tf.memory()
@@ -1272,13 +589,11 @@ class SequentialConvLayer {
           tf.tidy(() => tf.matMul(tf.ones([1, 1]), tf.ones([1, 1])))
           return [newoutC, newoutB]
         })
-
         console.log('=======================')
         const memoryInfo = await tf.memory()
         self.callbackUI(`Iteration ${chIdx}`, chIdx / self.outChannels)
         console.log(`Number of Tensors: ${memoryInfo.numTensors}`)
         console.log(`Number of Data Buffers: ${memoryInfo.numDataBuffers}`)
-        
         console.log(`Megabytes In Use: ${(memoryInfo.numBytes / 1048576).toFixed(3)} MB`)
         if (memoryInfo.unreliable) {
           console.log(`Unreliable: ${memoryInfo.unreliable}`)
@@ -1294,19 +609,18 @@ class SequentialConvLayer {
         outC = tf.keep(result[0])
         outB = tf.keep(result[1])
         // // Assign the new values to outC and outB
-        // outC = result[0];
-        // outB = result[1];
+        // outC = result[0]
+        // outB = result[1]
         tf.engine().endScope()
 
         if (chIdx === self.outChannels - 1) {
-          window.clearInterval(seqTimer)
-          // document.getElementById("progressBarChild").style.width = 0 + "%";
+          // document.getElementById("progressBarChild").style.width = 0 + "%"
           tf.dispose(outB)
           const endTime = performance.now()
           const executionTime = endTime - startTime
           console.log(`Execution time for output layer: ${executionTime} milliseconds`)
           tf.ENV.set('WEBGL_DELETE_TEXTURE_THRESHOLD', oldDeleteTextureThreshold)
-          resolve(outC)
+          return(outC)
         } else {
           chIdx++
 
@@ -1325,14 +639,10 @@ class SequentialConvLayer {
           outC = tf.tensor(outCdata, outCShape)
           outB = tf.tensor(outBdata, outBShape)
 
-          // document.getElementById("progressBarChild").style.width = (chIdx + 1) * 100 / self.outChannels + "%";
+          // document.getElementById("progressBarChild").style.width = (chIdx + 1) * 100 / self.outChannels + "%"
         }
-
-        // Artificially introduce a pause to allow for garbage collection to catch up
-        await new Promise((resolve) => setTimeout(resolve, 300))
-      }, 0)
-    })
-  }
+      }
+    }
 } // <<<< End of class
 
 async function generateOutputSlicesV2(
@@ -1368,9 +678,6 @@ async function generateOutputSlicesV2(
   // Create a new TypedArray from img with the same type as outLabelVolume
   const allOutputSlices3DCC1DimArray = new Uint8Array(img)
 
-  // ? const maskBrainExtraction = false
-
-  // let labelArrayBuffer
   const modelType = modelEntry.type
 
   // return img
@@ -1380,16 +687,16 @@ async function generateOutputSlicesV2(
       for (let i = 0; i < allOutputSlices3DCC1DimArray.length; i++) {
         brainMask[i] = allOutputSlices3DCC1DimArray[i] !== 0 ? 1 : 0
       }
-      // labelArrayBuffer = createNiftiOutArrayBuffer(rawNiftiData, brainMask);
-      // allOutputSlices3DCC1DimArray = brainMask;
-      // --labelsHistogramMap = null;
-      // maskBrainExtraction = true;
+      // labelArrayBuffer = createNiftiOutArrayBuffer(rawNiftiData, brainMask)
+      // allOutputSlices3DCC1DimArray = brainMask
+      // --labelsHistogramMap = null
+      // maskBrainExtraction = true
       return brainMask
-      // break;
+      // break
     }
     case 'Brain_Extraction': {
       const maskedData = new Uint8Array(allOutputSlices3DCC1DimArray.length)
-      // const brainData = nifti2data(rawNiftiData);
+      // const brainData = nifti2data(rawNiftiData)
 
       for (let i = 0; i < allOutputSlices3DCC1DimArray.length; i++) {
         // Create the mask - 1 where the value is non-zero, 0 where it is zero.
@@ -1397,15 +704,15 @@ async function generateOutputSlicesV2(
         // Apply the mask to the data - multiply by the mask value.
         maskedData[i] = niftiImage[i] * maskValue
       }
-      // labelArrayBuffer = createNiftiOutArrayBuffer(rawNiftiData, maskedData);
+      // labelArrayBuffer = createNiftiOutArrayBuffer(rawNiftiData, maskedData)
 
       // Update `allOutputSlices3DCC1DimArray` if needed.
-      // allOutputSlices3DCC1DimArray = maskedData;
+      // allOutputSlices3DCC1DimArray = maskedData
 
       // Other operations...
-      // maskBrainExtraction = true;
+      // maskBrainExtraction = true
       return maskedData
-      // break;
+      // break
     }
   }
 
@@ -1459,44 +766,20 @@ async function inferenceFullVolumeSeqCovLayerPhase2(
     }
   } else {
     mask_3d = await pipeline1_out.greater([0]).asType('bool')
-    // -- pipeline1_out.dispose();
+    // -- pipeline1_out.dispose()
   }
 
   console.log(' mask_3d shape :  ', mask_3d.shape)
+  const coords = await tf.whereAsync(mask_3d);
+  //-- Get each voxel coords (x, y, z)
 
-  const coords = await tf.whereAsync(mask_3d)
-  // -- Get each voxel coords (x, y, z)
-
-  mask_3d.dispose()
-
-  const coordsArr = coords.arraySync()
-
-  let row_min = slice_height
-  let row_max = 0
-  let col_min = slice_width
-  let col_max = 0
-  let depth_min = num_of_slices
-  let depth_max = 0
-
-  for (let i = 0; i < coordsArr.length; i++) {
-    if (row_min > coordsArr[i][0]) {
-      row_min = coordsArr[i][0]
-    } else if (row_max < coordsArr[i][0]) {
-      row_max = coordsArr[i][0]
-    }
-
-    if (col_min > coordsArr[i][1]) {
-      col_min = coordsArr[i][1]
-    } else if (col_max < coordsArr[i][1]) {
-      col_max = coordsArr[i][1]
-    }
-
-    if (depth_min > coordsArr[i][2]) {
-      depth_min = coordsArr[i][2]
-    } else if (depth_max < coordsArr[i][2]) {
-      depth_max = coordsArr[i][2]
-    }
-  }
+    mask_3d.dispose();
+    const row_min = coords.min(0).arraySync()[0];
+    const row_max = coords.max(0).arraySync()[0];
+    const col_min = coords.min(0).arraySync()[1];
+    const col_max = coords.max(0).arraySync()[1];
+    const depth_min = coords.min(0).arraySync()[2];
+    const depth_max = coords.max(0).arraySync()[2];
 
   console.log('row min and max  :', row_min, row_max)
   console.log('col min and max  :', col_min, col_max)
@@ -1532,15 +815,13 @@ async function inferenceFullVolumeSeqCovLayerPhase2(
     testVol = await resizeWithZeroPadding(testVol, num_of_slices, slice_height, slice_width, refVoxel, boundVolSizeArr)
     console.log(' outLabelVolume final shape after resizing :  ', testVol.shape)
 
-    draw3dObjBoundingVolume(tf.unstack(testVol))
+    draw3dObjBoundingVolume(tf.unstack(testVol), opts, modelEntry)
     testVol.dispose()
 
     return 0
   }
 
   statData.Brainchop_Ver = 'FullVolume'
-  // model.then(function (res) {
-  // console.log("--->>>>", opts.drawBoundingVolume); return
   const res = await model
   try {
     let startTime = performance.now()
@@ -1548,8 +829,6 @@ async function inferenceFullVolumeSeqCovLayerPhase2(
     // maxLabelPredicted in whole volume of the brain
     let maxLabelPredicted = 0
     const transpose = modelEntry.enableTranspose
-    const delay = modelEntry.inferenceDelay
-    console.log('Inference delay :', delay)
 
     if (transpose) {
       cropped_slices_3d_w_pad = await cropped_slices_3d_w_pad.transpose()
@@ -1598,11 +877,12 @@ async function inferenceFullVolumeSeqCovLayerPhase2(
 
     statData.Input_Shape = JSON.stringify(res.layers[0].batchInputShape)
     statData.Output_Shape = JSON.stringify(res.output.shape)
-    statData.Channel_Last = isChannelLast
+    statData.Channel_Last = await isChannelLast
     statData.Model_Param = await getModelNumParameters(res)
     statData.Model_Layers = await getModelNumLayers(res)
     statData.Model = modelEntry.modelName
-    statData.Extra_Info = null
+    statData.Seq_Conv = modelEntry.enableSeqConv
+    //statData.Extra_Info = null
 
     // Determine the number of output channels in the last layer of the model
     //  e.g. 3, 50, 104
@@ -1612,15 +892,11 @@ async function inferenceFullVolumeSeqCovLayerPhase2(
     const expected_Num_labels = isChannelLast
       ? outputLayer.outputShape[outputLayer.outputShape.length - 1]
       : outputLayer.outputShape[1]
-    console.log('Num of output channels : ', expected_Num_labels)
+    console.log('Num of output channels x: ', expected_Num_labels)
 
     const curTensor = []
     curTensor[0] = await cropped_slices_3d_w_pad.reshape(adjusted_input_shape)
-    // console.log("curTensor[0] :", curTensor[0].dataSync());
-
-    // let curProgBar = parseInt(document.getElementById("progressBar").style.width);
-
-    const timer = window.setInterval(async function () {
+    while (true) {
       try {
         if (res.layers[i].activation.getClassName() !== 'linear') {
           curTensor[i] = await res.layers[i].apply(curTensor[i - 1])
@@ -1635,12 +911,12 @@ async function inferenceFullVolumeSeqCovLayerPhase2(
             3
           ) // important for memory use
         }
+
         tf.dispose(curTensor[i - 1])
       } catch (err) {
-        // ? original code provided special dialog for shaders if( err.message === "Failed to compile fragment shader.") {
-        callbackUI(err.message, -1, err.message)
+        const errTxt = 'Your graphics card (e.g. Intel) may not be compatible with WebGL. ' + err.message
+        callbackUI(errTxt, -1, errTxt)
 
-        window.clearInterval(timer)
         tf.engine().endScope()
         tf.engine().disposeVariables()
 
@@ -1650,9 +926,7 @@ async function inferenceFullVolumeSeqCovLayerPhase2(
         statData.Error_Type = err.message
         statData.Extra_Err_Info = 'Failed while model layer ' + i + ' apply'
 
-        if (opts.telemetryFlag) {
-          await submitTiming2GoogleSheet(statData, callbackUI)
-        }
+        wcallbackUI('', -1, '', statData)
 
         return 0
       }
@@ -1663,7 +937,6 @@ async function inferenceFullVolumeSeqCovLayerPhase2(
       res.layers[i].dispose()
       curTensor[i - 1].dispose()
 
-      // bork
       callbackUI('Layer ' + i.toString(), (i + 1) / layersLength)
       if (tf.memory().unreliable) {
         const unreliableReasons = 'unreliable reasons :' + tf.memory().reasons
@@ -1672,24 +945,28 @@ async function inferenceFullVolumeSeqCovLayerPhase2(
       if (i === layersLength - 2) {
         // Stop before the last layer or classification layer.
 
-        window.clearInterval(timer)
 
         // // Create an instance of SequentialConvLayer
         // The second parameter is important for memory,
         // the larger it is, the more memory it uses
         // it was 8, but I set it to 3, got a different error
-        // let seqConvLayer = new SequentialConvLayer(res, 10, isChannelLast);
+        // let seqConvLayer = new SequentialConvLayer(res, 10, isChannelLast)
         const seqConvLayer = await new SequentialConvLayer(res, 10, isChannelLast, callbackUI)
 
         // Apply the last output tensor to the seq. instance
-        let outputTensor = await seqConvLayer.apply(curTensor[i])
+        let outputTensor = null
+        const profileInfo = await tf.profile(async () => {
+          // Your tensor operations here
+          outputTensor = await seqConvLayer.apply(curTensor[i])
+        })
+        console.log('profileInfo : ', profileInfo)
 
-        // -- document.getElementById("progressBarChild").style.width = 0 + "%";;
+        // -- document.getElementById("progressBarChild").style.width = 0 + "%";
 
         // Dispose the previous layer input tensor
         tf.dispose(curTensor[i])
         // delete the used class
-        // ? delete seqConvLayer;
+        // ? delete seqConvLayer
 
         // You can now use 'outputTensor' as needed
         console.log(' Output tensor', outputTensor)
@@ -1745,7 +1022,7 @@ async function inferenceFullVolumeSeqCovLayerPhase2(
         )
         console.log(' outLabelVolume final shape after resizing :  ', outLabelVolume.shape)
 
-        // let filterOutWithPreMask =  inferenceModelsList[$$("selectModel").getValue() - 1]["filterOutWithPreMask"];
+        // let filterOutWithPreMask =  inferenceModelsList[$$("selectModel").getValue() - 1]["filterOutWithPreMask"]
         const filterOutWithPreMask = modelEntry.filterOutWithPreMask
         // To clean the skull area wrongly segmented inphase-2.
         if (pipeline1_out != null && opts.isBrainCropMaskBased && filterOutWithPreMask) {
@@ -1792,9 +1069,7 @@ async function inferenceFullVolumeSeqCovLayerPhase2(
           statData.Error_Type = error.message
           statData.Extra_Err_Info = 'Failed while generating output'
 
-          if (opts.telemetryFlag) {
-            await submitTiming2GoogleSheet(statData, callbackUI)
-          }
+          wcallbackUI('', -1, '', statData)
 
           return 0
         }
@@ -1810,16 +1085,14 @@ async function inferenceFullVolumeSeqCovLayerPhase2(
         statData.Postprocess_t = Postprocess_t
         statData.Status = 'OK'
 
-        if (opts.telemetryFlag) {
-          await submitTiming2GoogleSheet(statData, callbackUI)
-        }
+        wcallbackUI('', -1, '', statData)
         callbackUI('Segmentation finished', 0)
         callbackImg(outimg, opts, modelEntry)
         return 0
       } else {
         i++
       }
-    }, delay)
+    }
   } catch (err) {
     callbackUI(err.message, -1, err.message)
     console.log(
@@ -1831,7 +1104,7 @@ async function inferenceFullVolumeSeqCovLayerPhase2(
       callbackUI(unreliableReasons, NaN, unreliableReasons)
     }
   }
-  // });
+  // })
 }
 
 async function inferenceFullVolumePhase2(
@@ -1877,7 +1150,7 @@ async function inferenceFullVolumePhase2(
       mask_3d = await slices_3d.greater([0]).asType('bool')
     }
   } else {
-    mask_3d = pipeline1_out.greater([0]).asType('bool')
+    mask_3d = await pipeline1_out.greater([0]).asType('bool')
     // -- pipeline1_out.dispose()
   }
   console.log(' mask_3d shape :  ', mask_3d.shape)
@@ -1960,7 +1233,7 @@ async function inferenceFullVolumePhase2(
     testVol = await resizeWithZeroPadding(testVol, num_of_slices, slice_height, slice_width, refVoxel, boundVolSizeArr)
     console.log(' outLabelVolume final shape after resizing :  ', testVol.shape)
     // todo draw3dObjBoundingVolume()
-    draw3dObjBoundingVolume(tf.unstack(testVol))
+    draw3dObjBoundingVolume(tf.unstack(testVol), opts, modelEntry)
     testVol.dispose()
 
     return 0
@@ -1970,16 +1243,12 @@ async function inferenceFullVolumePhase2(
   let startTime = performance.now()
   let adjusted_input_shape = []
   const res = await model
-  // ?
-  // model.then(function (res) {
   try {
     startTime = performance.now()
     const inferenceStartTime = performance.now()
     // maxLabelPredicted in whole volume of the brain
     let maxLabelPredicted = 0
     const transpose = modelEntry.enableTranspose
-    const delay = modelEntry.inferenceDelay
-    console.log('Inference delay :', delay)
 
     if (transpose) {
       cropped_slices_3d_w_pad = cropped_slices_3d_w_pad.transpose()
@@ -2028,25 +1297,22 @@ async function inferenceFullVolumePhase2(
 
     statData.Input_Shape = JSON.stringify(res.layers[0].batchInputShape)
     statData.Output_Shape = JSON.stringify(res.output.shape)
-    statData.Channel_Last = isChannelLast
+    statData.Channel_Last = await isChannelLast
     statData.Model_Param = await getModelNumParameters(res)
     statData.Model_Layers = await getModelNumLayers(res)
     statData.Model = modelEntry.modelName
-    statData.Extra_Info = null
+    //statData.Extra_Info = null
 
     const curTensor = []
     curTensor[0] = cropped_slices_3d_w_pad.reshape(adjusted_input_shape)
     // console.log("curTensor[0] :", curTensor[0].dataSync())
 
-    // ? let curProgBar = parseInt(document.getElementById("progressBar").style.width)
-    // let timer = window.setInterval(function() {
-    // ???? subsequent await are required
-    const timer = window.setInterval(async function () {
+    while (true) {
       try {
+        // -- curTensor[i] = res.layers[i].apply( curTensor[i-1])
         curTensor[i] = res.layers[i].apply(curTensor[i - 1])
       } catch (err) {
         callbackUI(err.message, -1, err.message)
-        window.clearInterval(timer)
         tf.engine().endScope()
         tf.engine().disposeVariables()
 
@@ -2056,9 +1322,7 @@ async function inferenceFullVolumePhase2(
         statData.Error_Type = err.message
         statData.Extra_Err_Info = 'Failed while model layer ' + i + ' apply'
 
-        if (opts.telemetryFlag) {
-          submitTiming2GoogleSheet(statData, callbackUI)
-        }
+        wcallbackUI('', -1, '', statData)
 
         return 0
       }
@@ -2071,10 +1335,12 @@ async function inferenceFullVolumePhase2(
         const unreliableReasons = 'unreliable reasons :' + tf.memory().reasons
         callbackUI(unreliableReasons, NaN, unreliableReasons)
       }
-      // ? document.getElementById("memoryStatus").style.backgroundColor =  memStatus
 
       if (i === layersLength - 1) {
-        window.clearInterval(timer)
+
+        // prediction = res.layers[res.layers.length-1].apply(curTensor[i])
+        // curTensor[i].print()
+        // outputDataBeforArgmx = Array.from(curTensor[i].dataSync())
 
         const axis = isChannelLast ? -1 : 1
         console.log(' find argmax ')
@@ -2123,7 +1389,6 @@ async function inferenceFullVolumePhase2(
               const errTxt = "argMax buffer couldn't be created due to limited memory resources."
               callbackUI(errTxt, -1, errTxt)
 
-              window.clearInterval(timer)
               tf.engine().endScope()
               tf.engine().disposeVariables()
 
@@ -2133,10 +1398,7 @@ async function inferenceFullVolumePhase2(
               statData.Error_Type = err2.message
               statData.Extra_Err_Info = 'prediction_argmax from argMaxLarge failed'
 
-              if (opts.telemetryFlag) {
-                submitTiming2GoogleSheet(statData, callbackUI)
-              }
-
+              wcallbackUI('', -1, '', statData)
               return 0
             }
           } else {
@@ -2146,7 +1408,6 @@ async function inferenceFullVolumePhase2(
 
             prediction_argmax.dispose()
 
-            window.clearInterval(timer)
             tf.engine().endScope()
             tf.engine().disposeVariables()
 
@@ -2156,9 +1417,7 @@ async function inferenceFullVolumePhase2(
             statData.Error_Type = err1.message
             statData.Extra_Err_Info = 'prediction_argmax from argMaxLarge not support yet channel first'
 
-            if (opts.telemetryFlag) {
-              submitTiming2GoogleSheet(statData, callbackUI)
-            }
+            wcallbackUI('', -1, '', statData)
 
             return 0
           }
@@ -2172,7 +1431,9 @@ async function inferenceFullVolumePhase2(
         // outputDataBeforArgmx = Array.from(prediction_argmax.dataSync())
         tf.dispose(curTensor[i])
         // allPredictions.push({"id": allBatches[j].id, "coordinates": allBatches[j].coordinates, "data": Array.from(prediction_argmax.dataSync()) })
+        console.log(' find array max ')
         const curBatchMaxLabel = await prediction_argmax.max().dataSync()[0]
+
         if (maxLabelPredicted < curBatchMaxLabel) {
           maxLabelPredicted = curBatchMaxLabel
         }
@@ -2202,10 +1463,8 @@ async function inferenceFullVolumePhase2(
           console.log('outLabelVolume transposed')
           outLabelVolume = outLabelVolume.transpose()
         }
-        // ???? await
         outLabelVolume = await removeZeroPaddingFrom3dTensor(outLabelVolume, pad, pad, pad)
         console.log(' outLabelVolume without padding shape :  ', outLabelVolume.shape)
-        // ???? await
         outLabelVolume = await resizeWithZeroPadding(
           outLabelVolume,
           num_of_slices,
@@ -2234,8 +1493,6 @@ async function inferenceFullVolumePhase2(
           tf.dispose(outLabelVolume)
           tf.engine().endScope()
           tf.engine().disposeVariables()
-          // ???? await
-          // BINGO
           outimg = await generateOutputSlicesV2(
             img,
             Vshape,
@@ -2262,19 +1519,13 @@ async function inferenceFullVolumePhase2(
           statData.Error_Type = error.message
           statData.Extra_Err_Info = 'Failed while generating output'
 
-          if (opts.telemetryFlag) {
-            submitTiming2GoogleSheet(statData, callbackUI)
-          }
+          wcallbackUI('', -1, '', statData)
 
           return 0
         }
 
         const Postprocess_t = ((performance.now() - startTime) / 1000).toFixed(4)
 
-        // ? $$("downloadBtn").enable()
-        // ? $$("segmentBtn").enable()
-        //    $$("imageUploader").enable()
-        // tf.engine().endScope()
         tf.engine().disposeVariables()
 
         console.log(
@@ -2286,28 +1537,21 @@ async function inferenceFullVolumePhase2(
         statData.Inference_t = Inference_t
         statData.Postprocess_t = Postprocess_t
         statData.Status = 'OK'
-
-        if (opts.telemetryFlag) {
-          submitTiming2GoogleSheet(statData, callbackUI)
-        }
-        clearInterval(timer)
         callbackUI('Segmentation finished', 0)
+        wcallbackUI('', -1, '', statData)
         callbackImg(outimg, opts, modelEntry)
+
         return 0
       }
       i++
-    }, delay)
+    }
   } catch (err) {
     callbackUI(err.message, -1, err.message)
     console.log(
       'If webgl context is lost, try to restore webgl context by visit the link ' +
         '<a href="https://support.biodigital.com/hc/en-us/articles/218322977-How-to-turn-on-WebGL-in-my-browser">here</a>'
     )
-    // ? document.getElementById("webGl2Status").style.backgroundColor =  isWebGL2ContextLost() ? "Red" : "Green"
-
-    // ? document.getElementById("memoryStatus").style.backgroundColor =  tf.memory().unreliable ? "Red" : "Green"
   }
-  //            })
 }
 
 async function inferenceFullVolumePhase1(
@@ -2322,6 +1566,7 @@ async function inferenceFullVolumePhase1(
   opts,
   callbackImg,
   callbackUI,
+  niftiHeader, 
   niftiImage
 ) {
   statData.No_SubVolumes = 1
@@ -2349,7 +1594,7 @@ async function inferenceFullVolumePhase1(
     // -- Transpose MRI data to be match pytorch/keras input output
     // -- Check if pre-model needs transpose..
     if (transpose) {
-      preModel_slices_3d = await preModel_slices_3d.transpose()
+      preModel_slices_3d = preModel_slices_3d.transpose()
       console.log('Input transposed for pre-model')
     } else {
       console.log('Transpose not enabled for pre-model')
@@ -2375,7 +1620,7 @@ async function inferenceFullVolumePhase1(
         return 0
       }
 
-      const isPreModelChannelLast = isModelChnlLast(preModelObject)
+      const isPreModelChannelLast = await isModelChnlLast(preModelObject)
       const batchSize = opts.batchSize
       const numOfChan = opts.numOfChan
       let batch_D, batch_H, batch_W
@@ -2410,15 +1655,12 @@ async function inferenceFullVolumePhase1(
 
       statData.Input_Shape = JSON.stringify(preModel_input_shape)
       statData.Output_Shape = JSON.stringify(preModelObject.output.shape)
-      statData.Channel_Last = isPreModelChannelLast
+      statData.Channel_Last = await isPreModelChannelLast
       statData.Model_Param = await getModelNumParameters(preModelObject)
       statData.Model_Layers = await getModelNumLayers(preModelObject)
-      // ? statData["Model"] = inferenceModelsList[ modelEntry["preModelId"] - 1]["modelName"]
-      // ? statData["Extra_Info"] = inferenceModelsList[$$("selectModel").getValue() - 1]["modelName"]
 
       // maxLabelPredicted in whole volume of the brain
       let maxLabelPredicted = 0
-      const delay = inferenceModelsList[modelEntry.preModelId - 1].inferenceDelay
 
       let i = 1
       const layersLength = res.layers.length
@@ -2429,15 +1671,13 @@ async function inferenceFullVolumePhase1(
 
       // Dispose the volume
       tf.dispose(preModel_slices_3d)
-
-      const timer = window.setInterval(async function () {
+      while (true) {
         try {
           curTensor[i] = res.layers[i].apply(curTensor[i - 1])
         } catch (err) {
-          // ? original code provided special dialog for fragment shader if( err.message === "Failed to compile fragment shader.")
-          callbackUI(err.message, -1, err.message)
+          const errTxt = 'Your graphics card (e.g. Intel) may not be compatible with WebGL. ' + err.message
+          callbackUI(errTxt, -1, errTxt)
 
-          window.clearInterval(timer)
           tf.engine().endScope()
           tf.engine().disposeVariables()
 
@@ -2447,9 +1687,7 @@ async function inferenceFullVolumePhase1(
           statData.Error_Type = err.message
           statData.Extra_Err_Info = 'PreModel Failed while model layer ' + i + ' apply'
 
-          if (opts.telemetryFlag) {
-            await submitTiming2GoogleSheet(statData, callbackUI)
-          }
+          wcallbackUI('', -1, '', statData)
 
           return 0
         }
@@ -2464,8 +1702,7 @@ async function inferenceFullVolumePhase1(
         }
 
         if (i === layersLength - 1) {
-          window.clearInterval(timer)
-
+          
           // -- prediction = res.layers[res.layers.length-1].apply(curTensor[i])
           // -- curTensor[i].print()
           // -- outputDataBeforArgmx = Array.from(curTensor[i].dataSync())
@@ -2510,7 +1747,6 @@ async function inferenceFullVolumePhase1(
 
                 prediction_argmax.dispose()
 
-                window.clearInterval(timer)
                 tf.engine().endScope()
                 tf.engine().disposeVariables()
 
@@ -2520,9 +1756,7 @@ async function inferenceFullVolumePhase1(
                 statData.Error_Type = err2.message
                 statData.Extra_Err_Info = 'preModel prediction_argmax from argMaxLarge failed'
 
-                if (opts.telemetryFlag) {
-                  await submitTiming2GoogleSheet(statData, callbackUI)
-                }
+                wcallbackUI('', -1, '', statData)
 
                 return 0
               }
@@ -2533,7 +1767,6 @@ async function inferenceFullVolumePhase1(
 
               prediction_argmax.dispose()
 
-              window.clearInterval(timer)
               tf.engine().endScope()
               tf.engine().disposeVariables()
 
@@ -2543,9 +1776,7 @@ async function inferenceFullVolumePhase1(
               statData.Error_Type = err1.message
               statData.Extra_Err_Info = 'preModel prediction_argmax from argMaxLarge not support yet channel first'
 
-              if (opts.telemetryFlag) {
-                await submitTiming2GoogleSheet(statData, callbackUI)
-              }
+              wcallbackUI('', -1, '', statData)
 
               return 0
             }
@@ -2560,6 +1791,7 @@ async function inferenceFullVolumePhase1(
 
           console.log(' Pre-model find array max ')
           const curBatchMaxLabel = await prediction_argmax.max().dataSync()[0]
+
           if (maxLabelPredicted < curBatchMaxLabel) {
             maxLabelPredicted = curBatchMaxLabel
           }
@@ -2594,6 +1826,8 @@ async function inferenceFullVolumePhase1(
               opts,
               callbackUI,
               callbackImg,
+              niftiHeader, 
+              niftiImage,
               false
             )
             await tf.dispose(outLabelVolume)
@@ -2612,9 +1846,7 @@ async function inferenceFullVolumePhase1(
             statData.Error_Type = error.message
             statData.Extra_Err_Info = 'Pre-model failed while generating output'
 
-            if (opts.telemetryFlag) {
-              await submitTiming2GoogleSheet(statData, callbackUI)
-            }
+            wcallbackUI('', -1, '', statData)
 
             return 0
           }
@@ -2629,9 +1861,7 @@ async function inferenceFullVolumePhase1(
           statData.Postprocess_t = Postprocess_t
           statData.Status = 'OK'
 
-          if (opts.telemetryFlag) {
-            await submitTiming2GoogleSheet(statData, callbackUI)
-          }
+          wcallbackUI('', -1, '', statData)
 
           if (slices_3d_mask == null) {
             const msg = 'slice_3d_mask failed ...'
@@ -2668,8 +1898,6 @@ async function inferenceFullVolumePhase1(
               } else {
                 // Mask cropping BUT no seq conv
                 console.log('------ Mask Cropping  -  NO Seq Convoluton ------')
-                // ? await
-                // todo output not used outimg = await
                 await inferenceFullVolumePhase2(
                   model,
                   slices_3d,
@@ -2694,7 +1922,7 @@ async function inferenceFullVolumePhase1(
           }
         }
         i++
-      }, delay)
+      }
     } catch (err) {
       callbackUI(err.message, -1, err.message)
       console.log(
@@ -2703,7 +1931,6 @@ async function inferenceFullVolumePhase1(
       )
 
       // document.getElementById("webGl2Status").style.backgroundColor =  isWebGL2ContextLost() ? "Red" : "Green"
-
       // document.getElementById("memoryStatus").style.backgroundColor =  tf.memory().unreliable ? "Red" : "Green"
     }
     // })
@@ -2782,9 +2009,10 @@ async function enableProductionMode(textureF16Flag = true) {
   console.log(tf.getBackend())
 }
 
-async function runInference(opts, modelEntry, niftiHeader, niftiImage, callbackImg, callbackUI) {
+async function runInferenceWW(opts, modelEntry, niftiHeader, niftiImage, callbackImg, callbackUI) {
+  const statData = []
+  statData.startTime = performance.now()
   callbackUI('Segmentation started', 0)
-  const startTime = performance.now()
   const batchSize = opts.batchSize
   const numOfChan = opts.numOfChan
   if (isNaN(batchSize) || batchSize !== 1) {
@@ -2802,6 +2030,7 @@ async function runInference(opts, modelEntry, niftiHeader, niftiImage, callbackI
   console.log('Num of Channels: ', numOfChan)
   const model = await load_model(modelEntry.path)
   await enableProductionMode(true)
+  statData.TF_Backend = tf.getBackend()
   const modelObject = model
   let batchInputShape = []
   // free global variable of 16777216 voxel
@@ -2859,9 +2088,8 @@ async function runInference(opts, modelEntry, niftiHeader, niftiImage, callbackI
   } else {
     isModelFullVol = false
   }
-  // ? const modelNumLayers = modelObject.layers.length
+  statData.isModelFullVol = isModelFullVol
   // Model output number of segmentations
-  // ? const outLabels = modelObject.layers[modelNumLayers - 1].bias.shape[0]
   let allSlices = await getAllSlicesData1D(num_of_slices, niftiHeader, niftiImage)
   const allSlices_2D = await getAllSlices2D(allSlices, slice_height, slice_width)
   // free array from mem
@@ -2870,89 +2098,6 @@ async function runInference(opts, modelEntry, niftiHeader, niftiImage, callbackI
   let slices_3d = await getSlices3D(allSlices_2D)
   // free tensor from mem
   tf.dispose(allSlices_2D)
-  const statData = []
-  if (opts.telemetryFlag) {
-    const Preprocess_t = ((performance.now() - startTime) / 1000).toFixed(4)
-    // -- Timing data to collect
-    const today = new Date()
-    if (isModelFullVol) {
-      statData.Brainchop_Ver = 'FullVolume'
-    } else {
-      statData.Brainchop_Ver = 'SubVolumes'
-    }
-
-    /* let geoData = getBrowserLocationInfo()
-    if(geoData) {
-          statData["Country"] = geoData["Country"]
-          statData["State"] = geoData["Region"]
-          statData["City"] = geoData["City"]
-    } else {
-          statData["Country"] = ""
-          statData["State"] = ""
-          statData["City"] = ""
-    } */
-
-    statData.Date = parseInt(today.getMonth() + 1) + '/' + today.getDate() + '/' + today.getFullYear()
-    statData.Time =
-      (await checkZero(today.getHours())) + ':' + checkZero(today.getMinutes()) + ':' + checkZero(today.getSeconds())
-    // ? statData["File_Name"] = refFileName == "" ? opts.uiSampleName: refFileName
-    statData.Input_Shape = JSON.stringify(batchInputShape)
-    statData.Output_Shape = JSON.stringify(modelObject.output.shape)
-    statData.Channel_Last = isChannelLast
-    statData.Model_Param = await getModelNumParameters(modelObject)
-    statData.Model_Layers = await getModelNumLayers(modelObject)
-
-    statData.Preprocess_t = Preprocess_t
-    statData.Model = modelEntry.modelName
-    statData.Browser = await detectBrowser()
-    statData.Browser_Ver = await detectBrowserVersion()
-    statData.OS = await detectOperatingSys()
-    // ? NiiVue requires WebGL2, all contemporary browsers support it statData["WebGL1"] = checkWebGl1()
-    statData.WebGL2 = await checkWebGl2(callbackUI)
-    statData.GPU_Vendor = await detectGPUVendor()
-    statData.GPU_Card = await detectGPUCardType()
-    statData.GPU_Vendor_Full = await detectGPUVendor_v0()
-    statData.GPU_Card_Full = await detectGPUCardType_v0()
-    statData.CPU_Cores = await getCPUNumCores()
-    statData.TF_Backend = tf.getBackend()
-
-    statData.Which_Brainchop = 'latest'
-    // ? statData["Seq_Conv"] =  inferenceModelsList[$$("selectModel").getValue() - 1]["enableSeqConv"]
-    statData.Seq_Conv = modelEntry.enableSeqConv
-
-    // -- Init
-    statData.Actual_Labels = Infinity
-    statData.Expect_Labels = Infinity
-    statData.NumLabels_Match = null
-    statData.Inference_t = Infinity
-    statData.Merge_t = Infinity
-    statData.Postprocess_t = Infinity
-    statData.Status = null
-    statData.Error_Type = null
-    statData.Extra_Err_Info = null
-    statData.Extra_Info = null
-
-    if (isChrome()) {
-      statData.Heap_Size_MB = window.performance.memory.totalJSHeapSize / (1024 * 1024).toFixed(2)
-      statData.Used_Heap_MB = window.performance.memory.usedJSHeapSize / (1024 * 1024).toFixed(2)
-      statData.Heap_Limit_MB = window.performance.memory.jsHeapSizeLimit / (1024 * 1024).toFixed(2)
-    }
-    const gl = checkWebGl2() ? document.createElement('canvas').getContext('webgl2') : null
-
-    console.log('MAX_TEXTURE_SIZE :', gl.getParameter(gl.MAX_TEXTURE_SIZE))
-    console.log('MAX_RENDERBUFFER_SIZE :', gl.getParameter(gl.MAX_RENDERBUFFER_SIZE))
-
-    // -- check to see   if  machine has two graphics card: one is the builtin e.g. Intel Iris Pro, the other is NVIDIA GeForce GT 750M.
-    // -- check browser use which one, if debugInfo is null then installed  GPU is not used
-    const debugInfo = gl.getExtension('WEBGL_debug_renderer_info')
-    console.log('VENDOR WEBGL:', gl.getParameter(debugInfo.UNMASKED_VENDOR_WEBGL))
-
-    if (gl) {
-      statData.Texture_Size = gl.getParameter(gl.MAX_TEXTURE_SIZE) // --returns the maximum dimension the GPU can address
-    } else {
-      statData.Texture_Size = null
-    }
-  } // if telemetryFlag
   const transpose = modelEntry.enableTranspose
   const enableCrop = modelEntry.enableCrop
   if (isModelFullVol) {
@@ -2971,6 +2116,7 @@ async function runInference(opts, modelEntry, niftiHeader, niftiImage, callbackI
         opts,
         callbackImg,
         callbackUI,
+        niftiHeader,
         niftiImage
       )
     } else {
@@ -3012,3 +2158,7 @@ async function runInference(opts, modelEntry, niftiHeader, niftiImage, callbackI
     }
   }
 }
+
+self.addEventListener('message', function(event) {
+  runInferenceWW(event.data.opts, event.data.modelEntry, event.data.niftiHeader, event.data.niftiImage, wcallbackImg, wcallbackUI)
+}, false)
