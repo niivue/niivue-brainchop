@@ -308,7 +308,7 @@ const inferenceModelsList = [
   {
     id: 12,
     type: 'Brain_Masking',
-    path: './models/model5_gw_ae/model.json',
+    path: 'https://neurolabusc.github.io/niivue-brainchop/models/model5_gw_ae/model.json',
     modelName: '\u26A1 Brain Mask (FAST)',
     labelsPath: null,
     colorsPath: null,
