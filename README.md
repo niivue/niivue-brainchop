@@ -11,7 +11,7 @@ https://neurolabusc.github.io/niivue-brainchop/
 ### To run
 
 ```bash
-git clone https://github.com/niivue/niivue-brainchop
+git clone https://github.com/neurolabusc/niivue-brainchop.git
 cd niivue-brainchop
 npm install
 npm run dev
