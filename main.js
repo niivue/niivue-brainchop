@@ -2,6 +2,10 @@ import { Niivue } from "@niivue/niivue"
 import {runInference } from './brainchop-mainthread.js'
 import { inferenceModelsList, brainChopOpts } from "./brainchop-parameters.js"
 import { isChrome, localSystemDetails } from "./brainchop-telemetry.js"
+//import MyWorker from "./worker?worker";
+//import MyWorker from "./brainchop-webworker.js?worker";
+import MyWorker from "./brainchop-webworker.js?worker";
+
 async function main() {
   aboutBtn.onclick = function () {
     window.alert("BrainChop models https://github.com/neuroneural/brainchop")
@@ -45,7 +49,10 @@ async function main() {
           console.log('Unable to start new segmentation: previous call has not completed')
           return
       }
-      chopWorker = new Worker("./brainchop-webworker.js", { type: "module" })
+      console.log('loading webworkerz')
+      chopWorker = await new MyWorker({ type: "module" })
+      //let worker = new MyWorker();
+      console.log('loaded webworker', chopWorker)
       let hdr = {datatypeCode: nv1.volumes[0].hdr.datatypeCode, dims: nv1.volumes[0].hdr.dims}
       let msg = {opts:opts, modelEntry: model, niftiHeader: hdr, niftiImage: nv1.volumes[0].img}
       chopWorker.postMessage(msg)
