@@ -1,10 +1,18 @@
 import { Niivue } from "@niivue/niivue"
 import {runInference } from './brainchop-mainthread.js'
 import { inferenceModelsList, brainChopOpts } from "./brainchop-parameters.js"
-import { isChrome, localSystemDetails, submitTiming2GoogleSheet } from "./brainchop-telemetry.js"
+import { isChrome, localSystemDetails } from "./brainchop-telemetry.js"
 async function main() {
   aboutBtn.onclick = function () {
     window.alert("BrainChop models https://github.com/neuroneural/brainchop")
+  }
+  diagnosticsBtn.onclick = function () {
+    if (diagnosticsString.length < 1) {
+      window.alert('No diagnostic string generated: run a model to create diagnostics')
+      return
+    }
+    navigator.clipboard.writeText(diagnosticsString)
+    window.alert('Diagnostics copied to clipboard\n' + diagnosticsString)
   }
   opacitySlider.oninput = function () {
     nv1.setOpacity(1, opacitySlider.value / 255)
@@ -103,12 +111,10 @@ async function main() {
       statData = strToArray(statData)
     }
     statData = await localSystemDetails(statData, nv1.gl)
-    console.log(':::: Telemetry ::::')
+    diagnosticsString = ':: Diagnostics can help resolve issues https://github.com/neuroneural/brainchop/issues ::\n'
     for (var key in statData){
-      console.log( key + ": " + statData[key]);
+      diagnosticsString +=  key + ': ' + statData[key]+'\n';
     }
-    //ToDo: user opt in and GDPR compliance
-    // submitTiming2GoogleSheet(statData)
   }
   function callbackUI(message = "", progressFrac = -1, modalMessage = "", statData = []) {
     if (message !== "") {
@@ -136,6 +142,7 @@ async function main() {
     show3Dcrosshair: true,
     onLocationChange: handleLocationChange,
   }
+  var diagnosticsString = ''
   var chopWorker
   let nv1 = new Niivue(defaults)
   nv1.attachToCanvas(gl1)

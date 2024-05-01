@@ -1,8 +1,4 @@
-export {isChrome, localSystemDetails, submitTiming2GoogleSheet }
-
-async function checkZero(timeValue) {
-  return timeValue < 10 ? timeValue : '0' + timeValue
-}
+export {isChrome, localSystemDetails }
 
 async function detectBrowser() {
   if (navigator.userAgent.indexOf('OPR/') > -1) {
@@ -174,34 +170,17 @@ async function localSystemDetails(statData, gl = null) {
     } */
 
     statData.Date = parseInt(today.getMonth() + 1) + '/' + today.getDate() + '/' + today.getFullYear()
-    statData.Time =
-      (await checkZero(today.getHours())) + ':' + checkZero(today.getMinutes()) + ':' + checkZero(today.getSeconds())
-    // ? statData["File_Name"] = refFileName == "" ? opts.uiSampleName: refFileName
+    statData.Time_Elapsed = Preprocess_t
     statData.Browser = await detectBrowser()
     statData.Browser_Ver = await detectBrowserVersion()
     statData.OS = await detectOperatingSys()
-    // ? NiiVue requires WebGL2, all contemporary browsers support it statData["WebGL1"] = checkWebGl1()
     statData.WebGL2 = await checkWebGl2(gl)
     statData.GPU_Vendor = await detectGPUVendor(gl)
     statData.GPU_Card = await detectGPUCardType(gl)
     statData.GPU_Vendor_Full = await detectGPUVendor_v0(gl)
     statData.GPU_Card_Full = await detectGPUCardType_v0(gl)
     statData.CPU_Cores = await getCPUNumCores()
-
     statData.Which_Brainchop = 'latest'
-    // ? statData["Seq_Conv"] =  inferenceModelsList[$$("selectModel").getValue() - 1]["enableSeqConv"]
-    // -- Init
-    statData.Actual_Labels = Infinity
-    statData.Expect_Labels = Infinity
-    statData.NumLabels_Match = null
-    statData.Inference_t = Infinity
-    statData.Merge_t = Infinity
-    statData.Postprocess_t = Infinity
-    statData.Status = null
-    statData.Error_Type = null
-    statData.Extra_Err_Info = null
-    statData.Extra_Info = null
-
     if (isChrome()) {
       statData.Heap_Size_MB = window.performance.memory.totalJSHeapSize / (1024 * 1024).toFixed(2)
       statData.Used_Heap_MB = window.performance.memory.usedJSHeapSize / (1024 * 1024).toFixed(2)
@@ -219,31 +198,4 @@ async function localSystemDetails(statData, gl = null) {
       statData.Texture_Size = null
     }
     return statData
-}
-
-async function submitTiming2GoogleSheet(dataObj) {
-  const isOnline = await navigator.onLine
-  if(isOnline){
-    console.log(" submitTiming2GoogleSheet not yet implemented")
-/*
-    // -- Fill form with data to submit
-    Object.keys(dataObj).forEach(dataKey =>{
-         document.getElementById(dataKey).value = dataObj[dataKey];
-    })
-    //-- Settings of submission
-    const scriptURL = 'https://script.google.com/macros/s/AKfycbwn-Ix6IVGOwUSU1VBU8hFcABT9PqwCwN90UxfK_fXp5CEfxvIoQHZXs2XQRZQo_N8I/exec'
-    const form = document.forms['google-sheet']
-    //-- Add event handler to the form.
-    form.addEventListener('submit', e => {
-          e.preventDefault()
-          fetch(scriptURL, { method: 'POST', body: new FormData(form)})
-            .then(response => console.log("------Done------"))
-            .catch(error => console.error('Error!', error.message))
-    })
-    //-- Submit the form
-    document.getElementById("SubmitStatisticalData").click();
-*/
-  } else {
-     console.log(" Offline Mode ")
-  }
 }
