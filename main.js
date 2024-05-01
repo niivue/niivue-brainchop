@@ -42,7 +42,8 @@ async function main() {
     await ensureConformed()
     let model = inferenceModelsList[this.selectedIndex]
     let opts = brainChopOpts
-    opts.rootURL = location.protocol + '//' + location.host
+    //opts.rootURL = location.protocol + '//' + location.host
+    opts.rootURL = location.href
     if (workerCheck.checked) {
       if(typeof(chopWorker) !== "undefined") {
           console.log('Unable to start new segmentation: previous call has not completed')
