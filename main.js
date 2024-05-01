@@ -34,6 +34,8 @@ async function main() {
     }
   }
   modelSelect.onchange = async function () {
+    if (this.selectedIndex < 0)
+      modelSelect.selectedIndex = 11
     await closeAllOverlays()
     await ensureConformed()
     let model = inferenceModelsList[this.selectedIndex]
