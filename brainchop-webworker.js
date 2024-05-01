@@ -1992,6 +1992,7 @@ async function inferenceFullVolumePhase1(
 
 async function enableProductionMode(textureF16Flag = true) {
   // -- tf.setBackend('cpu')
+  tf.setBackend('webgl');
   // -- tf.removeBackend('cpu')
   // -- Calling enableProdMode() method
   await tf.enableProdMode()
@@ -2007,7 +2008,7 @@ async function enableProductionMode(textureF16Flag = true) {
   console.log('tf env() flags :', tf.env().flags)
   console.log('tf env() features :', tf.env().features)
   console.log('tf env total features: ', Object.keys(tf.env().features).length)
-  console.log(tf.getBackend())
+  console.log('tf backend: ', tf.getBackend())
 }
 
 async function runInferenceWW(opts, modelEntry, niftiHeader, niftiImage, callbackImg, callbackUI) {
