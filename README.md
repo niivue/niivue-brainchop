@@ -4,7 +4,7 @@ This is an experimental version of [brainchop](https://github.com/neuroneural/br
 
 ## Live preview
 
-https://niivue.github.io/niivue-brainchop/
+https://neurolabusc.github.io/niivue-brainchop/
 
 ## Getting started
 
@@ -16,6 +16,8 @@ cd niivue-brainchop
 npm install
 npm run dev
 ```
+
+Use the `Segmentation Model` pull down menu to run different tissue classifications.
 
 ### To build
 
