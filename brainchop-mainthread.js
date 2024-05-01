@@ -24,6 +24,7 @@ async function isModelChnlLast(modelObj) {
 }
 
 async function load_model(modelUrl) {
+  console.log('main thread load_model', modelUrl)
   return await tf.loadLayersModel(modelUrl)
 }
 
@@ -1566,7 +1567,7 @@ async function inferenceFullVolumePhase1(
   statData.No_SubVolumes = 1
   // load pre-model for inference first, can be null if no pre-model such as GWM models
   if (modelEntry.preModelId) {
-    const preModel = await load_model(inferenceModelsList[modelEntry.preModelId - 1].path)
+    const preModel = await load_model(opts.rootURL + inferenceModelsList[modelEntry.preModelId - 1].path)
     const transpose = inferenceModelsList[modelEntry.preModelId - 1].enableTranspose
     const quantileNorm = inferenceModelsList[modelEntry.preModelId - 1].enableQuantileNorm
     let preModel_slices_3d = null
@@ -2027,7 +2028,7 @@ async function runInference(opts, modelEntry, niftiHeader, niftiImage, callbackI
   tf.engine().startScope()
   console.log('Batch size: ', batchSize)
   console.log('Num of Channels: ', numOfChan)
-  const model = await load_model(modelEntry.path)
+  const model = await load_model(opts.rootURL + modelEntry.path)
   await enableProductionMode(true)
   statData.TF_Backend = tf.getBackend()
   const modelObject = model

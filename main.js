@@ -2,8 +2,6 @@ import { Niivue } from "@niivue/niivue"
 import {runInference } from './brainchop-mainthread.js'
 import { inferenceModelsList, brainChopOpts } from "./brainchop-parameters.js"
 import { isChrome, localSystemDetails } from "./brainchop-telemetry.js"
-//import MyWorker from "./worker?worker";
-//import MyWorker from "./brainchop-webworker.js?worker";
 import MyWorker from "./brainchop-webworker.js?worker";
 
 async function main() {
@@ -44,6 +42,7 @@ async function main() {
     await ensureConformed()
     let model = inferenceModelsList[this.selectedIndex]
     let opts = brainChopOpts
+    opts.rootURL = location.protocol + '//' + location.host
     if (workerCheck.checked) {
       if(typeof(chopWorker) !== "undefined") {
           console.log('Unable to start new segmentation: previous call has not completed')
