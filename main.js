@@ -43,7 +43,7 @@ async function main() {
           console.log('Unable to start new segmentation: previous call has not completed')
           return
       }
-      chopWorker = new Worker("brainchop-webworker.js", { type: "module" })
+      chopWorker = new Worker("./brainchop-webworker.js", { type: "module" })
       let hdr = {datatypeCode: nv1.volumes[0].hdr.datatypeCode, dims: nv1.volumes[0].hdr.dims}
       let msg = {opts:opts, modelEntry: model, niftiHeader: hdr, niftiImage: nv1.volumes[0].img}
       chopWorker.postMessage(msg)
