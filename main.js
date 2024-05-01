@@ -42,8 +42,18 @@ async function main() {
     await ensureConformed()
     let model = inferenceModelsList[this.selectedIndex]
     let opts = brainChopOpts
-    //opts.rootURL = location.protocol + '//' + location.host
     opts.rootURL = location.href
+    const isLocalhost = Boolean(
+      window.location.hostname === 'localhost' ||
+      // [::1] is the IPv6 localhost address.
+      window.location.hostname === '[::1]' ||
+      // 127.0.0.1/8 is considered localhost for IPv4.
+      window.location.hostname.match(
+          /^127(?:\.(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)){3}$/
+      )
+    )
+    if (isLocalhost)
+      opts.rootURL = location.protocol + '//' + location.host
     if (workerCheck.checked) {
       if(typeof(chopWorker) !== "undefined") {
           console.log('Unable to start new segmentation: previous call has not completed')
