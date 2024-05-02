@@ -11,11 +11,16 @@ https://niivue.github.io/niivue-brainchop/
 ### To run
 
 ```bash
-git clone https://github.com/niivue/niivue-brainchop
+git clone git@github.com:niivue/niivue-brainchop.git
 cd niivue-brainchop
 npm install
 npm run dev
 ```
+
+Use the `Segmentation Model` pull down menu to run different tissue classifications.
+
+
+![brainchop](brainchop.png)
 
 ### To build
 

@@ -158,7 +158,7 @@ export class BWLabeler {
   // translation table unifies a region that has been assigned multiple classes
   fill_tratab(tt, nabo, nr_set, tn) {
     // let cntr = 0
-    tn.fill(0)
+    //tn.fill(0)
     const INT_MAX = 2147483647
     let ltn = INT_MAX
     for (let i = 0; i < nr_set; i++) {
