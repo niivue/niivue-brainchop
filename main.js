@@ -6,7 +6,7 @@ import MyWorker from "./brainchop-webworker.js?worker"
 
 async function main() {
   smoothCheck.onchange = function () {
-    nv1.setInterpolation(smoothCheck.checked)
+    nv1.setInterpolation(!smoothCheck.checked)
   }
   aboutBtn.onclick = function () {
     window.alert("BrainChop models https://github.com/neuroneural/brainchop")
