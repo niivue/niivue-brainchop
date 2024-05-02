@@ -2,7 +2,7 @@ import { Niivue } from "@niivue/niivue"
 import {runInference } from './brainchop-mainthread.js'
 import { inferenceModelsList, brainChopOpts } from "./brainchop-parameters.js"
 import { isChrome, localSystemDetails } from "./brainchop-telemetry.js"
-import MyWorker from "./brainchop-webworker.js?worker";
+import MyWorker from "./brainchop-webworker.js?worker"
 
 async function main() {
   aboutBtn.onclick = function () {
@@ -16,8 +16,12 @@ async function main() {
     navigator.clipboard.writeText(diagnosticsString)
     window.alert('Diagnostics copied to clipboard\n' + diagnosticsString)
   }
-  opacitySlider.oninput = function () {
-    nv1.setOpacity(1, opacitySlider.value / 255)
+  opacitySlider0.oninput = function () {
+    nv1.setOpacity(0, opacitySlider0.value / 255)
+    nv1.updateGLVolume()
+  }
+  opacitySlider1.oninput = function () {
+    nv1.setOpacity(1, opacitySlider1.value / 255)
   }
   async function ensureConformed() {
     let nii = nv1.volumes[0]
@@ -88,6 +92,15 @@ async function main() {
   workerCheck.onchange = function () {
     modelSelect.onchange()
   }
+  clipCheck.onchange = function () {
+    if (clipCheck.checked) {
+      nv1.setClipPlane([0, 0, 90])
+    } else {
+      nv1.setClipPlane([2, 0, 90])
+    }
+  }
+    
+  
   async function fetchJSON(fnm) {
     const response = await fetch(fnm)
     const js = await response.json()
@@ -111,25 +124,25 @@ async function main() {
       }
       overlayVolume.colormap = colormap
     }
-    overlayVolume.opacity = opacitySlider.value / 255
+    overlayVolume.opacity = opacitySlider1.value / 255
     await nv1.addVolume(overlayVolume)
   }
   async function reportTelemetry(statData) {
     if (typeof statData === 'string' || statData instanceof String) {
       function strToArray(str) {
-        const list = JSON.parse(str);
-        const array = [];
+        const list = JSON.parse(str)
+        const array = []
         for (const key in list) {
-            array[key] = list[key];
+            array[key] = list[key]
         }
-        return array;
+        return array
       }
       statData = strToArray(statData)
     }
     statData = await localSystemDetails(statData, nv1.gl)
     diagnosticsString = ':: Diagnostics can help resolve issues https://github.com/neuroneural/brainchop/issues ::\n'
     for (var key in statData){
-      diagnosticsString +=  key + ': ' + statData[key]+'\n';
+      diagnosticsString +=  key + ': ' + statData[key]+'\n'
     }
   }
   function callbackUI(message = "", progressFrac = -1, modalMessage = "", statData = []) {
