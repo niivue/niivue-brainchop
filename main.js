@@ -105,6 +105,9 @@ async function main() {
       nv1.setClipPlane([2, 0, 90])
     }
   }
+  function doLoadImage() {
+    opacitySlider0.oninput()
+  }
   async function fetchJSON(fnm) {
     const response = await fetch(fnm)
     const js = await response.json()
@@ -193,6 +196,7 @@ async function main() {
     option.value = inferenceModelsList[i].id.toString()
     modelSelect.appendChild(option)
   }
+  nv1.onImageLoaded = doLoadImage
   modelSelect.selectedIndex = -1
   workerCheck.checked = await isChrome() //TODO: Safari does not yet support WebGL TFJS webworkers, test FireFox
   // uncomment next two lines to automatically run segmentation when web page is loaded
