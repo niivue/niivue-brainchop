@@ -2010,7 +2010,7 @@ async function enableProductionMode(textureF16Flag = true) {
 
 async function runInference(opts, modelEntry, niftiHeader, niftiImage, callbackImg, callbackUI) {
   const statData = []
-  statData.startTime = performance.now()
+  statData.startTime = Date.now() // for common webworker/mainthread do not use performance.now()
   callbackUI('Segmentation started', 0)
   const startTime = performance.now()
   const batchSize = opts.batchSize

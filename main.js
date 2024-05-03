@@ -5,6 +5,9 @@ import { isChrome, localSystemDetails } from "./brainchop-telemetry.js"
 import MyWorker from "./brainchop-webworker.js?worker"
 
 async function main() {
+  smoothCheck.onchange = function () {
+    nv1.setInterpolation(!smoothCheck.checked)
+  }
   aboutBtn.onclick = function () {
     window.alert("BrainChop models https://github.com/neuroneural/brainchop")
   }
@@ -99,8 +102,6 @@ async function main() {
       nv1.setClipPlane([2, 0, 90])
     }
   }
-    
-  
   async function fetchJSON(fnm) {
     const response = await fetch(fnm)
     const js = await response.json()
@@ -116,6 +117,8 @@ async function main() {
     if (modelEntry.colormapPath) {
       let cmap = await fetchJSON(modelEntry.colormapPath)
       overlayVolume.setColormapLabel(cmap)
+      // n.b. most models create indexed labels, but those without colormap mask scalar input
+      overlayVolume.hdr.intent_code = 1002 // NIFTI_INTENT_LABEL
     } else {
       let colormap = opts.atlasSelectedColorTable.toLowerCase()
       const cmaps = nv1.colormaps()
@@ -179,6 +182,7 @@ async function main() {
   nv1.opts.multiplanarForceRender = true
   nv1.opts.yoke3Dto2DZoom = true
   nv1.opts.crosshairGap = 11
+  smoothCheck.onchange()
   await nv1.loadVolumes([{ url: "./t1_crop.nii.gz" }])
   for (let i = 0; i < inferenceModelsList.length; i++) {
     var option = document.createElement("option")
