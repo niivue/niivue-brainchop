@@ -92,6 +92,9 @@ async function main() {
   saveBtn.onclick = function () {
     nv1.volumes[1].saveToDisk("Custom.nii")
   }
+  sceneBtn.onclick = function () {
+    nv1.saveDocument("niivue.brainchop.nvd")
+  }
   workerCheck.onchange = function () {
     modelSelect.onchange()
   }
