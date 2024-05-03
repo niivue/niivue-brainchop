@@ -149,7 +149,6 @@ async function isChrome() {
 }
 
 async function localSystemDetails(statData, gl = null) {
-    const Preprocess_t = ((performance.now() - statData.startTime) / 1000).toFixed(4)
     // -- Timing data to collect
     const today = new Date()
     if (statData.isModelFullVol) {
@@ -168,9 +167,9 @@ async function localSystemDetails(statData, gl = null) {
           statData["State"] = ""
           statData["City"] = ""
     } */
-
+    statData.Total_t = (Date.now() - statData.startTime) / 1000.0
+    delete statData.startTime
     statData.Date = parseInt(today.getMonth() + 1) + '/' + today.getDate() + '/' + today.getFullYear()
-    statData.Time_Elapsed = Preprocess_t
     statData.Browser = await detectBrowser()
     statData.Browser_Ver = await detectBrowserVersion()
     statData.OS = await detectOperatingSys()
