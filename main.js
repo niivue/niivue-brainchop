@@ -186,7 +186,6 @@ async function main() {
   nv1.opts.yoke3Dto2DZoom = true
   nv1.opts.crosshairGap = 11
   smoothCheck.onchange()
-  //await nv1.loadVolumes([{ url: "./sub-1_acq-tfl3p2_run-5_T1w.nii.gz" }])
   await nv1.loadVolumes([{ url: "./t1_crop.nii.gz" }])
   for (let i = 0; i < inferenceModelsList.length; i++) {
     var option = document.createElement("option")
