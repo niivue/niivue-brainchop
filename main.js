@@ -9,7 +9,7 @@ async function main() {
     nv1.setInterpolation(!smoothCheck.checked)
   }
   aboutBtn.onclick = function () {
-    window.alert("BrainChop models https://github.com/neuroneural/brainchop")
+    window.alert("Drag and drop NIfTI images. Use pulldown menu to choose brainchop model")
   }
   diagnosticsBtn.onclick = function () {
     if (diagnosticsString.length < 1) {
@@ -34,8 +34,8 @@ async function main() {
     if (isConformed)
       return
     let nii2 = await nv1.conform(nii, false)
-    nv1.removeVolume(nv1.volumes[0])
-    nv1.addVolume(nii2)
+    await nv1.removeVolume(nv1.volumes[0])
+    await nv1.addVolume(nii2)
   }
   async function closeAllOverlays() {
     while (nv1.volumes.length > 1) {
@@ -91,9 +91,6 @@ async function main() {
   }
   saveBtn.onclick = function () {
     nv1.volumes[1].saveToDisk("Custom.nii")
-  }
-  sceneBtn.onclick = function () {
-    nv1.saveDocument("niivue.brainchop.nvd")
   }
   workerCheck.onchange = function () {
     modelSelect.onchange()
