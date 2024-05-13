@@ -1,4 +1,4 @@
-export {isChrome, localSystemDetails }
+export { isChrome, localSystemDetails }
 
 async function detectBrowser() {
   if (navigator.userAgent.indexOf('OPR/') > -1) {
@@ -55,10 +55,10 @@ async function detectOperatingSys() {
 }
 
 async function checkWebGl2(gl) {
-  //const gl = document.createElement('canvas').getContext('webgl2')
+  // const gl = document.createElement('canvas').getContext('webgl2')
   if (!gl) {
     if (typeof WebGL2RenderingContext !== 'undefined') {
-      const msg = 'WebGL2 may be disabled. Please try updating video card drivers'
+      console.log('WebGL2 may be disabled. Please try updating video card drivers')
     } else {
       console.log('WebGL2 is not supported')
     }
@@ -70,7 +70,7 @@ async function checkWebGl2(gl) {
 }
 
 async function detectGPUVendor(gl) {
-  //const gl = document.createElement('canvas').getContext('webgl')
+  // const gl = document.createElement('canvas').getContext('webgl')
   let debugInfo
   if (gl) {
     debugInfo = gl.getExtension('WEBGL_debug_renderer_info')
@@ -87,7 +87,7 @@ async function detectGPUVendor(gl) {
 }
 
 async function detectGPUVendor_v0(gl) {
-  //const gl = document.createElement('canvas').getContext('webgl')
+  // const gl = document.createElement('canvas').getContext('webgl')
   if (gl) {
     const debugInfo = gl.getExtension('WEBGL_debug_renderer_info')
     return debugInfo ? gl.getParameter(debugInfo.UNMASKED_VENDOR_WEBGL) : null
@@ -149,15 +149,15 @@ async function isChrome() {
 }
 
 async function localSystemDetails(statData, gl = null) {
-    // -- Timing data to collect
-    const today = new Date()
-    if (statData.isModelFullVol) {
-      statData.Brainchop_Ver = 'FullVolume'
-    } else {
-      statData.Brainchop_Ver = 'SubVolumes'
-    }
+  // -- Timing data to collect
+  const today = new Date()
+  if (statData.isModelFullVol) {
+    statData.Brainchop_Ver = 'FullVolume'
+  } else {
+    statData.Brainchop_Ver = 'SubVolumes'
+  }
 
-    /* let geoData = getBrowserLocationInfo()
+  /* let geoData = getBrowserLocationInfo()
     if(geoData) {
           statData["Country"] = geoData["Country"]
           statData["State"] = geoData["Region"]
@@ -167,34 +167,34 @@ async function localSystemDetails(statData, gl = null) {
           statData["State"] = ""
           statData["City"] = ""
     } */
-    statData.Total_t = (Date.now() - statData.startTime) / 1000.0
-    delete statData.startTime
-    statData.Date = parseInt(today.getMonth() + 1) + '/' + today.getDate() + '/' + today.getFullYear()
-    statData.Browser = await detectBrowser()
-    statData.Browser_Ver = await detectBrowserVersion()
-    statData.OS = await detectOperatingSys()
-    statData.WebGL2 = await checkWebGl2(gl)
-    statData.GPU_Vendor = await detectGPUVendor(gl)
-    statData.GPU_Card = await detectGPUCardType(gl)
-    statData.GPU_Vendor_Full = await detectGPUVendor_v0(gl)
-    statData.GPU_Card_Full = await detectGPUCardType_v0(gl)
-    statData.CPU_Cores = await getCPUNumCores()
-    statData.Which_Brainchop = 'latest'
-    if (await isChrome()) {
-      statData.Heap_Size_MB = window.performance.memory.totalJSHeapSize / (1024 * 1024).toFixed(2)
-      statData.Used_Heap_MB = window.performance.memory.usedJSHeapSize / (1024 * 1024).toFixed(2)
-      statData.Heap_Limit_MB = window.performance.memory.jsHeapSizeLimit / (1024 * 1024).toFixed(2)
-    }
-    if (gl) {
-      console.log('MAX_TEXTURE_SIZE :', gl.getParameter(gl.MAX_TEXTURE_SIZE))
-      console.log('MAX_RENDERBUFFER_SIZE :', gl.getParameter(gl.MAX_RENDERBUFFER_SIZE))
-      // -- check to see   if  machine has two graphics card: one is the builtin e.g. Intel Iris Pro, the other is NVIDIA GeForce GT 750M.
-      // -- check browser use which one, if debugInfo is null then installed  GPU is not used
-      const debugInfo = gl.getExtension('WEBGL_debug_renderer_info')
-      console.log('VENDOR WEBGL:', gl.getParameter(debugInfo.UNMASKED_VENDOR_WEBGL))
-      statData.Texture_Size = gl.getParameter(gl.MAX_TEXTURE_SIZE) // --returns the maximum dimension the GPU can address
-    } else {
-      statData.Texture_Size = null
-    }
-    return statData
+  statData.Total_t = (Date.now() - statData.startTime) / 1000.0
+  delete statData.startTime
+  statData.Date = parseInt(today.getMonth() + 1) + '/' + today.getDate() + '/' + today.getFullYear()
+  statData.Browser = await detectBrowser()
+  statData.Browser_Ver = await detectBrowserVersion()
+  statData.OS = await detectOperatingSys()
+  statData.WebGL2 = await checkWebGl2(gl)
+  statData.GPU_Vendor = await detectGPUVendor(gl)
+  statData.GPU_Card = await detectGPUCardType(gl)
+  statData.GPU_Vendor_Full = await detectGPUVendor_v0(gl)
+  statData.GPU_Card_Full = await detectGPUCardType_v0(gl)
+  statData.CPU_Cores = await getCPUNumCores()
+  statData.Which_Brainchop = 'latest'
+  if (await isChrome()) {
+    statData.Heap_Size_MB = window.performance.memory.totalJSHeapSize / (1024 * 1024).toFixed(2)
+    statData.Used_Heap_MB = window.performance.memory.usedJSHeapSize / (1024 * 1024).toFixed(2)
+    statData.Heap_Limit_MB = window.performance.memory.jsHeapSizeLimit / (1024 * 1024).toFixed(2)
+  }
+  if (gl) {
+    console.log('MAX_TEXTURE_SIZE :', gl.getParameter(gl.MAX_TEXTURE_SIZE))
+    console.log('MAX_RENDERBUFFER_SIZE :', gl.getParameter(gl.MAX_RENDERBUFFER_SIZE))
+    // -- check to see   if  machine has two graphics card: one is the builtin e.g. Intel Iris Pro, the other is NVIDIA GeForce GT 750M.
+    // -- check browser use which one, if debugInfo is null then installed  GPU is not used
+    const debugInfo = gl.getExtension('WEBGL_debug_renderer_info')
+    console.log('VENDOR WEBGL:', gl.getParameter(debugInfo.UNMASKED_VENDOR_WEBGL))
+    statData.Texture_Size = gl.getParameter(gl.MAX_TEXTURE_SIZE) // --returns the maximum dimension the GPU can address
+  } else {
+    statData.Texture_Size = null
+  }
+  return statData
 }
