@@ -10,9 +10,6 @@
 
 <body>
   <header>
-    <label for="smoothCheck">Interpolate</label>
-    <input type="checkbox" id="smoothCheck" unchecked />
-    &nbsp;
     <label for="clipCheck">Clip Plane</label>
     <input type="checkbox" id="clipCheck" unchecked />
     <label for="opacitySlider0">Background Opacity</label>
@@ -29,6 +26,28 @@
     &nbsp;
     <label for="workerCheck">Use Webworker</label>
     <input type="checkbox" title="webworkers are faster but not supported by all browsers" id="workerCheck" checked />
+    &nbsp;
+    <label for="penDrop">Draw</label>
+    <select id="penDrop">
+      <option value="-1">Off</option>
+      <option value="2">On</option>
+      <option value="10">Filled</option>
+      <option value="0">Erase</option>
+    </select>
+    <select id="drawDrop">
+      <option value="0">Undo</option>
+      <option value="1">Append</option>
+      <option value="2">Remove</option>
+    </select>
+    &nbsp;
+    <label for="dragMode">Drag Mode</label>
+    <select id="dragMode">
+      <option>none</option>
+      <option>contrast</option>
+      <option>measurement</option>
+      <option selected>pan/zoom</option>
+      <option>slicer3D</option>
+    </select>
     &nbsp;
     <button id="diagnosticsBtn">Show Diagnostics</button>
     &nbsp;
