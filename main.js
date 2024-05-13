@@ -5,8 +5,51 @@ import { isChrome, localSystemDetails } from './brainchop-diagnostics.js'
 import MyWorker from './brainchop-webworker.js?worker'
 
 async function main() {
-  smoothCheck.onchange = function () {
-    nv1.setInterpolation(!smoothCheck.checked)
+  dragMode.onchange = async function () {
+    nv1.opts.dragMode = this.selectedIndex
+  }
+  drawDrop.onchange = async function () {
+    if (nv1.volumes.length < 2) {
+      window.alert('No segmentation open (use the Segmentation pull down)')
+      drawDrop.selectedIndex = -1
+      return
+    }
+
+    if (!nv1.drawBitmap) {
+      window.alert('No drawing (hint: use the Draw pull down to select a pen)')
+      drawDrop.selectedIndex = -1
+      return
+    }
+    const mode = parseInt(this.value)
+    if (mode === 0) {
+      nv1.drawUndo()
+      drawDrop.selectedIndex = -1
+      return
+    }
+    let img = nv1.volumes[1].img
+    let draw = await nv1.saveImage({ filename: "", isSaveDrawing: true })
+    const niiHdrBytes = 352
+    const nvox = draw.length
+    if (mode === 1) {//append
+      for (let i = 0; i < nvox; i++)
+        if (draw[niiHdrBytes+i] > 0)
+          img[i] = 1
+    }
+    if (mode === 2) {//delete
+      for (let i = 0; i < nvox; i++)
+        if (draw[niiHdrBytes+i] > 0)
+          img[i] = 0
+    }
+    nv1.closeDrawing()
+    nv1.updateGLVolume()
+    nv1.setDrawingEnabled(false)
+    penDrop.selectedIndex = -1
+    drawDrop.selectedIndex = -1
+  }
+  penDrop.onchange = async function () {
+    const mode = parseInt(this.value)
+    nv1.setDrawingEnabled(mode >= 0)
+    if (mode >= 0) nv1.setPenValue(mode & 7, mode > 7)
   }
   aboutBtn.onclick = function () {
     window.alert('Drag and drop NIfTI images. Use pulldown menu to choose brainchop model')
@@ -188,7 +231,7 @@ async function main() {
   nv1.opts.multiplanarForceRender = true
   nv1.opts.yoke3Dto2DZoom = true
   nv1.opts.crosshairGap = 11
-  smoothCheck.onchange()
+  nv1.setInterpolation(true)
   await nv1.loadVolumes([{ url: './t1_crop.nii.gz' }])
   for (let i = 0; i < inferenceModelsList.length; i++) {
     const option = document.createElement('option')
@@ -198,10 +241,11 @@ async function main() {
   }
   nv1.onImageLoaded = doLoadImage
   modelSelect.selectedIndex = -1
+  drawDrop.selectedIndex = -1
   workerCheck.checked = await isChrome() // TODO: Safari does not yet support WebGL TFJS webworkers, test FireFox
   // uncomment next two lines to automatically run segmentation when web page is loaded
-  //   modelSelect.selectedIndex = 11
-  //   modelSelect.onchange()
+  // modelSelect.selectedIndex = 11
+  // modelSelect.onchange()
 }
 
 main()
