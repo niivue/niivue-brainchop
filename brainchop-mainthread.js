@@ -1,7 +1,7 @@
 import * as tf from '@tensorflow/tfjs'
 import { BWLabeler } from './bwlabels.js'
-import { inferenceModelsList } from "./brainchop-parameters.js"
-export { runInference}
+import { inferenceModelsList } from './brainchop-parameters.js'
+export { runInference }
 
 async function getModelNumParameters(modelObj) {
   let numParameters = 0
@@ -151,43 +151,56 @@ async function minMaxNormalizeVolumeData(volumeData) {
 }
 
 async function inferenceFullVolumeSeqCovLayer(
-  model,
-  slices_3d,
-  input_shape,
-  isChannelLast,
-  num_of_slices,
-  slice_height,
-  slice_width
+  _model,
+  _slices_3d,
+  _input_shape,
+  _isChannelLast,
+  _num_of_slices,
+  _slice_height,
+  _slice_width
 ) {
   window.alert('inferenceFullVolumeSeqCovLayer() is not dead code?')
 }
 
 async function inferenceFullVolume(
-  model,
-  slices_3d,
-  input_shape,
-  isChannelLast,
-  num_of_slices,
-  slice_height,
-  slice_width
+  _model,
+  _slices_3d,
+  _input_shape,
+  _isChannelLast,
+  _num_of_slices,
+  _slice_height,
+  _slice_width
 ) {
   window.alert('inferenceFullVolume() is not dead code?')
 }
 
-async function inferenceSubVolumes(model, slices_3d, num_of_slices, slice_height, slice_width, pipeline1_out = null) {
+async function inferenceSubVolumes(
+  _model,
+  _slices_3d,
+  _num_of_slices,
+  _slice_height,
+  _slice_width,
+  _pipeline1_out = null
+) {
   window.alert('inferenceSubVolumes() is not dead code?')
 }
 
-async function tensor2LightBuffer(tensor, dtype) {
+async function tensor2LightBuffer(_tensor, _dtype) {
   window.alert('tensor2LightBuffer() is not dead code?')
-  // return new Buffer(tensor.shape, dtype, Array.from(tensor.dataSync()) );
 }
 
-async function draw3dObjBoundingVolume(unstackOutVolumeTensor) {
+async function draw3dObjBoundingVolume(_unstackOutVolumeTensor) {
   window.alert('draw3dObjBoundingVolume() is not dead code?')
 }
 
-async function argMaxLarge(outVolumeBuffer, num_of_slices, slice_height, slice_width, numOfClasses, dtype = 'float32') {
+async function argMaxLarge(
+  _outVolumeBuffer,
+  _num_of_slices,
+  _slice_height,
+  _slice_width,
+  _numOfClasses,
+  _dtype = 'float32'
+) {
   window.alert('argMaxLarge() is not dead code?')
 }
 
@@ -202,8 +215,7 @@ async function removeZeroPaddingFrom3dTensor(tensor3d, rowPad = 1, colPad = 1, d
   if (tensor3d.rank !== 3) {
     throw new Error('Tensor must be 3D')
   }
-  let h, w, d
-  ;[h, w, d] = tensor3d.shape
+  const [h, w, d] = tensor3d.shape
   return tensor3d.slice([rowPad, colPad, depthPad], [h - 2 * rowPad, w - 2 * colPad, d - 2 * depthPad])
 }
 
@@ -298,11 +310,11 @@ async function generateBrainMask(
   // Use this conversion to download output slices as nii file. Takes around 30 ms
   // does not use `push` to avoid stack overflows. In future: consider .set() with typed arrays
   const allOutputSlices3DCC1DimArray = new Array(allOutputSlices3DCC[0].length * allOutputSlices3DCC.length)
-  let index = 0;
+  let index = 0
   for (let sliceIdx = 0; sliceIdx < allOutputSlices3DCC.length; sliceIdx++) {
-      for (let i = 0; i < allOutputSlices3DCC[sliceIdx].length; i++) {
-          allOutputSlices3DCC1DimArray[index++] = allOutputSlices3DCC[sliceIdx][i];
-      }
+    for (let i = 0; i < allOutputSlices3DCC[sliceIdx].length; i++) {
+      allOutputSlices3DCC1DimArray[index++] = allOutputSlices3DCC[sliceIdx][i]
+    }
   }
   let brainOut = []
 
@@ -315,7 +327,8 @@ async function generateBrainMask(
     //  Brain tissue
     window.alert('getAllSlicesData1D() is not dead code? niftiHeader and niftiImage required by getAllSlicesData1D')
   }
-  if (isFinalImage || opts.showPhase1Output) {//all done
+  if (isFinalImage || opts.showPhase1Output) {
+    // all done
     callbackImg(brainOut, opts, modelEntry)
     callbackUI('Segmentation finished', 0)
   }
@@ -495,7 +508,7 @@ class SequentialConvLayer {
   async apply(inputTensor) {
     const oldDeleteTextureThreshold = tf.ENV.get('WEBGL_DELETE_TEXTURE_THRESHOLD')
     tf.ENV.set('WEBGL_DELETE_TEXTURE_THRESHOLD', 0)
-
+    // eslint-disable-next-line @typescript-eslint/no-this-alias
     const self = this
     // Important to avoid "undefined" class var members inside the timer.
     // "this" has another meaning inside the timer.
@@ -555,7 +568,7 @@ class SequentialConvLayer {
         self.callbackUI(`Iteration ${chIdx}`, chIdx / self.outChannels)
         console.log(`Number of Tensors: ${memoryInfo.numTensors}`)
         console.log(`Number of Data Buffers: ${memoryInfo.numDataBuffers}`)
-        
+
         console.log(`Megabytes In Use: ${(memoryInfo.numBytes / 1048576).toFixed(3)} MB`)
         if (memoryInfo.unreliable) {
           console.log(`Unreliable: ${memoryInfo.unreliable}`)
@@ -632,7 +645,7 @@ async function generateOutputSlicesV2(
     const conn = 26 // Example connectivity
     const binarize = true
     const onlyLargestClusterPerClass = true
-    const [labelCount, labeledImage] = BWInstance.bwlabel(img, dim, conn, binarize, onlyLargestClusterPerClass)
+    const [_labelCount, labeledImage] = BWInstance.bwlabel(img, dim, conn, binarize, onlyLargestClusterPerClass)
     for (let i = 0; i < img.length; i++) {
       img[i] *= labeledImage[i]
     }
@@ -955,7 +968,7 @@ async function inferenceFullVolumeSeqCovLayerPhase2(
         const seqConvLayer = await new SequentialConvLayer(res, 10, isChannelLast, callbackUI)
 
         // Apply the last output tensor to the seq. instance
-        let outputTensor = await seqConvLayer.apply(curTensor[i])
+        const outputTensor = await seqConvLayer.apply(curTensor[i])
 
         // -- document.getElementById("progressBarChild").style.width = 0 + "%";;
 

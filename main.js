@@ -1,15 +1,15 @@
-import { Niivue } from "@niivue/niivue"
-import {runInference } from './brainchop-mainthread.js'
-import { inferenceModelsList, brainChopOpts } from "./brainchop-parameters.js"
-import { isChrome, localSystemDetails } from "./brainchop-telemetry.js"
-import MyWorker from "./brainchop-webworker.js?worker"
+import { Niivue } from '@niivue/niivue'
+import { runInference } from './brainchop-mainthread.js'
+import { inferenceModelsList, brainChopOpts } from './brainchop-parameters.js'
+import { isChrome, localSystemDetails } from './brainchop-diagnostics.js'
+import MyWorker from './brainchop-webworker.js?worker'
 
 async function main() {
   smoothCheck.onchange = function () {
     nv1.setInterpolation(!smoothCheck.checked)
   }
   aboutBtn.onclick = function () {
-    window.alert("Drag and drop NIfTI images. Use pulldown menu to choose brainchop model")
+    window.alert('Drag and drop NIfTI images. Use pulldown menu to choose brainchop model')
   }
   diagnosticsBtn.onclick = function () {
     if (diagnosticsString.length < 1) {
@@ -27,13 +27,15 @@ async function main() {
     nv1.setOpacity(1, opacitySlider1.value / 255)
   }
   async function ensureConformed() {
-    let nii = nv1.volumes[0]
-    let isConformed = ((nii.dims[1] === 256) && (nii.dims[2] === 256) && (nii.dims[3] === 256))
-    if ((nii.permRAS[0] !== -1) || (nii.permRAS[1] !== 3) || (nii.permRAS[2] !== -2))
+    const nii = nv1.volumes[0]
+    let isConformed = nii.dims[1] === 256 && nii.dims[2] === 256 && nii.dims[3] === 256
+    if (nii.permRAS[0] !== -1 || nii.permRAS[1] !== 3 || nii.permRAS[2] !== -2) {
       isConformed = false
-    if (isConformed)
+    }
+    if (isConformed) {
       return
-    let nii2 = await nv1.conform(nii, false)
+    }
+    const nii2 = await nv1.conform(nii, false)
     await nv1.removeVolume(nv1.volumes[0])
     await nv1.addVolume(nii2)
   }
@@ -43,46 +45,46 @@ async function main() {
     }
   }
   modelSelect.onchange = async function () {
-    if (this.selectedIndex < 0)
+    if (this.selectedIndex < 0) {
       modelSelect.selectedIndex = 11
+    }
     await closeAllOverlays()
     await ensureConformed()
-    let model = inferenceModelsList[this.selectedIndex]
-    let opts = brainChopOpts
+    const model = inferenceModelsList[this.selectedIndex]
+    const opts = brainChopOpts
     opts.rootURL = location.href
     const isLocalhost = Boolean(
       window.location.hostname === 'localhost' ||
-      // [::1] is the IPv6 localhost address.
-      window.location.hostname === '[::1]' ||
-      // 127.0.0.1/8 is considered localhost for IPv4.
-      window.location.hostname.match(
-          /^127(?:\.(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)){3}$/
-      )
+        // [::1] is the IPv6 localhost address.
+        window.location.hostname === '[::1]' ||
+        // 127.0.0.1/8 is considered localhost for IPv4.
+        window.location.hostname.match(/^127(?:\.(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)){3}$/)
     )
-    if (isLocalhost)
+    if (isLocalhost) {
       opts.rootURL = location.protocol + '//' + location.host
+    }
     if (workerCheck.checked) {
-      if(typeof(chopWorker) !== "undefined") {
-          console.log('Unable to start new segmentation: previous call has not completed')
-          return
+      if (typeof chopWorker !== 'undefined') {
+        console.log('Unable to start new segmentation: previous call has not completed')
+        return
       }
-      chopWorker = await new MyWorker({ type: "module" })
-      let hdr = {datatypeCode: nv1.volumes[0].hdr.datatypeCode, dims: nv1.volumes[0].hdr.dims}
-      let msg = {opts:opts, modelEntry: model, niftiHeader: hdr, niftiImage: nv1.volumes[0].img}
+      chopWorker = await new MyWorker({ type: 'module' })
+      const hdr = { datatypeCode: nv1.volumes[0].hdr.datatypeCode, dims: nv1.volumes[0].hdr.dims }
+      const msg = { opts, modelEntry: model, niftiHeader: hdr, niftiImage: nv1.volumes[0].img }
       chopWorker.postMessage(msg)
-      chopWorker.onmessage = function(event) {
-        let cmd = event.data.cmd
+      chopWorker.onmessage = function (event) {
+        const cmd = event.data.cmd
         if (cmd === 'ui') {
-            if (event.data.modalMessage !== "") {
-              chopWorker.terminate()
-              chopWorker = undefined
-            }
-            callbackUI(event.data.message, event.data.progressFrac, event.data.modalMessage, event.data.statData)
-        }
-        if (cmd === 'img') {
+          if (event.data.modalMessage !== '') {
             chopWorker.terminate()
             chopWorker = undefined
-            callbackImg(event.data.img, event.data.opts, event.data.modelEntry)
+          }
+          callbackUI(event.data.message, event.data.progressFrac, event.data.modalMessage, event.data.statData)
+        }
+        if (cmd === 'img') {
+          chopWorker.terminate()
+          chopWorker = undefined
+          callbackImg(event.data.img, event.data.opts, event.data.modelEntry)
         }
       }
     } else {
@@ -90,7 +92,7 @@ async function main() {
     }
   }
   saveBtn.onclick = function () {
-    nv1.volumes[1].saveToDisk("Custom.nii")
+    nv1.volumes[1].saveToDisk('Custom.nii')
   }
   workerCheck.onchange = function () {
     modelSelect.onchange()
@@ -112,13 +114,13 @@ async function main() {
   }
   async function callbackImg(img, opts, modelEntry) {
     closeAllOverlays()
-    let overlayVolume = await nv1.volumes[0].clone()
+    const overlayVolume = await nv1.volumes[0].clone()
     overlayVolume.zeroImage()
     overlayVolume.hdr.scl_inter = 0
     overlayVolume.hdr.scl_slope = 1
     overlayVolume.img = new Uint8Array(img)
     if (modelEntry.colormapPath) {
-      let cmap = await fetchJSON(modelEntry.colormapPath)
+      const cmap = await fetchJSON(modelEntry.colormapPath)
       overlayVolume.setColormapLabel(cmap)
       // n.b. most models create indexed labels, but those without colormap mask scalar input
       overlayVolume.hdr.intent_code = 1002 // NIFTI_INTENT_LABEL
@@ -139,7 +141,7 @@ async function main() {
         const list = JSON.parse(str)
         const array = []
         for (const key in list) {
-            array[key] = list[key]
+          array[key] = list[key]
         }
         return array
       }
@@ -147,22 +149,23 @@ async function main() {
     }
     statData = await localSystemDetails(statData, nv1.gl)
     diagnosticsString = ':: Diagnostics can help resolve issues https://github.com/neuroneural/brainchop/issues ::\n'
-    for (var key in statData){
-      diagnosticsString +=  key + ': ' + statData[key]+'\n'
+    for (const key in statData) {
+      diagnosticsString += key + ': ' + statData[key] + '\n'
     }
   }
-  function callbackUI(message = "", progressFrac = -1, modalMessage = "", statData = []) {
-    if (message !== "") {
+  function callbackUI(message = '', progressFrac = -1, modalMessage = '', statData = []) {
+    if (message !== '') {
       console.log(message)
-      document.getElementById("location").innerHTML = message
+      document.getElementById('location').innerHTML = message
     }
-    if (isNaN(progressFrac)) { //memory issue
-      memstatus.style.color = "red"
-      memstatus.innerHTML = "Memory Issue"
+    if (isNaN(progressFrac)) {
+      // memory issue
+      memstatus.style.color = 'red'
+      memstatus.innerHTML = 'Memory Issue'
     } else if (progressFrac >= 0) {
       modelProgress.value = progressFrac * modelProgress.max
     }
-    if (modalMessage !== "") {
+    if (modalMessage !== '') {
       window.alert(modalMessage)
     }
     if (Object.keys(statData).length > 0) {
@@ -170,36 +173,35 @@ async function main() {
     }
   }
   function handleLocationChange(data) {
-    document.getElementById("location").innerHTML = "&nbsp;&nbsp;" + data.string
+    document.getElementById('location').innerHTML = '&nbsp;&nbsp;' + data.string
   }
-  let defaults = {
+  const defaults = {
     backColor: [0.4, 0.4, 0.4, 1],
     show3Dcrosshair: true,
-    onLocationChange: handleLocationChange,
+    onLocationChange: handleLocationChange
   }
-  var diagnosticsString = ''
-  var chopWorker
-  let nv1 = new Niivue(defaults)
+  let diagnosticsString = ''
+  let chopWorker
+  const nv1 = new Niivue(defaults)
   nv1.attachToCanvas(gl1)
   nv1.opts.dragMode = nv1.dragModes.pan
   nv1.opts.multiplanarForceRender = true
   nv1.opts.yoke3Dto2DZoom = true
   nv1.opts.crosshairGap = 11
   smoothCheck.onchange()
-  await nv1.loadVolumes([{ url: "./t1_crop.nii.gz" }])
+  await nv1.loadVolumes([{ url: './t1_crop.nii.gz' }])
   for (let i = 0; i < inferenceModelsList.length; i++) {
-    var option = document.createElement("option")
+    const option = document.createElement('option')
     option.text = inferenceModelsList[i].modelName
     option.value = inferenceModelsList[i].id.toString()
     modelSelect.appendChild(option)
   }
   nv1.onImageLoaded = doLoadImage
   modelSelect.selectedIndex = -1
-  workerCheck.checked = await isChrome() //TODO: Safari does not yet support WebGL TFJS webworkers, test FireFox
+  workerCheck.checked = await isChrome() // TODO: Safari does not yet support WebGL TFJS webworkers, test FireFox
   // uncomment next two lines to automatically run segmentation when web page is loaded
   //   modelSelect.selectedIndex = 11
   //   modelSelect.onchange()
-
 }
 
 main()
