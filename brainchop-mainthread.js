@@ -423,7 +423,7 @@ class SequentialConvLayer {
     this.outChannels = model.outputLayers[0].kernel.shape[4]
     this.chunkSize = chunkSize
     this.isChannelLast = isChannelLast
-    this.callbackUI = callbackUI // fork
+    this.callbackUI = callbackUI
   }
 
   /**
@@ -2001,7 +2001,6 @@ async function runInference(opts, modelEntry, niftiHeader, niftiImage, callbackI
   const model = await load_model(opts.rootURL + modelEntry.path)
   await enableProductionMode(true)
   statData.TF_Backend = tf.getBackend()
-  callbackUI('Segmentation mork', 0)
   const modelObject = model
   let batchInputShape = []
   // free global variable of 16777216 voxel
