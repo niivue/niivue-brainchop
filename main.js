@@ -14,7 +14,6 @@ async function main() {
       drawDrop.selectedIndex = -1
       return
     }
-
     if (!nv1.drawBitmap) {
       window.alert('No drawing (hint: use the Draw pull down to select a pen)')
       drawDrop.selectedIndex = -1
