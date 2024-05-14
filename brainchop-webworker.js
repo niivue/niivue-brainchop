@@ -2,7 +2,7 @@ import * as tf from '@tensorflow/tfjs'
 import { BWLabeler } from './bwlabels.js'
 import { inferenceModelsList } from './brainchop-parameters.js'
 
-function wcallbackUI(message = '', progressFrac = -1, modalMessage = '', statData = []) {
+function callbackUI(message = '', progressFrac = -1, modalMessage = '', statData = []) {
   let statStr = []
   if (Object.keys(statData).length > 0) {
     function arrayToStr() {
@@ -23,7 +23,7 @@ function wcallbackUI(message = '', progressFrac = -1, modalMessage = '', statDat
   })
 }
 
-function wcallbackImg(img, opts, modelEntry) {
+function callbackImg(img, opts, modelEntry) {
   self.postMessage({ cmd: 'img', img, opts, modelEntry })
 }
 
@@ -52,19 +52,7 @@ async function load_model(modelUrl) {
   return await tf.loadLayersModel(modelUrl)
 }
 
-async function getAllSlices2D(allSlices, slice_height, slice_width) {
-  const allSlices_2D = []
-  for (let sliceIdx = 0; sliceIdx < allSlices.length; sliceIdx++) {
-    allSlices_2D.push(tf.tensor(allSlices[sliceIdx], [slice_height, slice_width]))
-  }
-  return allSlices_2D
-}
-
-async function getSlices3D(allSlices_2D) {
-  return tf.stack(allSlices_2D)
-}
-
-async function getAllSlicesData1D(num_of_slices, niftiHeader, niftiImage) {
+async function getAllSlicesDataAsTF3D(num_of_slices, niftiHeader, niftiImage) {
   // Get nifti dimensions
   const cols = niftiHeader.dims[1] // Slice width
   const rows = niftiHeader.dims[2] // Slice height
@@ -96,7 +84,7 @@ async function getAllSlicesData1D(num_of_slices, niftiHeader, niftiImage) {
   } else {
     return
   }
-  const allSlices = []
+  const allSlices_2D = []
   let offset3D = 0
   // Draw pixels
   for (let slice = 0; slice < num_of_slices; slice++) {
@@ -109,9 +97,11 @@ async function getAllSlicesData1D(num_of_slices, niftiHeader, niftiImage) {
         slice[offset2D++] = value & 0xff
       }
     }
-    allSlices.push(slice)
+    allSlices_2D.push(tf.tensor(slice, [rows, cols])) // slice_height, slice_width
   }
-  return allSlices
+  const allSlices_3D = tf.stack(allSlices_2D)
+  tf.dispose(allSlices_2D)
+  return allSlices_3D
 }
 
 async function calculateQuantiles(tensor, lowerQuantile = 0.01, upperQuantile = 0.99) {
@@ -183,7 +173,7 @@ async function inferenceFullVolumeSeqCovLayer(
   _slice_height,
   _slice_width
 ) {
-  wcallbackUI('', -1, 'inferenceFullVolumeSeqCovLayer() is not dead code?')
+  callbackUI('', -1, 'inferenceFullVolumeSeqCovLayer() is not dead code?')
 }
 
 async function inferenceFullVolume(
@@ -195,7 +185,7 @@ async function inferenceFullVolume(
   _slice_height,
   _slice_width
 ) {
-  wcallbackUI('', -1, 'inferenceFullVolume() is not dead code?')
+  callbackUI('', -1, 'inferenceFullVolume() is not dead code?')
 }
 
 async function inferenceSubVolumes(
@@ -206,11 +196,11 @@ async function inferenceSubVolumes(
   _slice_width,
   _pipeline1_out = null
 ) {
-  wcallbackUI('', -1, 'inferenceSubVolumes() is not dead code?')
+  callbackUI('', -1, 'inferenceSubVolumes() is not dead code?')
 }
 
 async function tensor2LightBuffer(_tensor, _dtype) {
-  wcallbackUI('', -1, 'tensor2LightBuffer() is not dead code?')
+  callbackUI('', -1, 'tensor2LightBuffer() is not dead code?')
 }
 
 async function argMaxLarge(
@@ -221,7 +211,7 @@ async function argMaxLarge(
   _numOfClasses,
   _dtype = 'float32'
 ) {
-  wcallbackUI('', -1, 'argMaxLarge() is not dead code?')
+  callbackUI('', -1, 'argMaxLarge() is not dead code?')
 }
 
 async function binarizeVolumeDataTensor(volumeDataTensor) {
@@ -250,7 +240,7 @@ async function draw3dObjBoundingVolume(unstackOutVolumeTensor, opts, modelEntry)
   console.log('Done with allOutputSlices3DCC1DimArray ')
   const brainMaskTensor1d = await binarizeVolumeDataTensor(tf.tensor1d(allOutputSlices3DCC1DimArray))
   const brainOut = Array.from(brainMaskTensor1d.dataSync())
-  wcallbackImg(brainOut, opts, modelEntry)
+  callbackImg(brainOut, opts, modelEntry)
 }
 
 async function addZeroPaddingTo3dTensor(tensor3d, rowPadArr = [1, 1], colPadArr = [1, 1], depthPadArr = [1, 1]) {
@@ -320,68 +310,33 @@ async function generateBrainMask(
   slice_width,
   modelEntry,
   opts,
-  niftiHeader,
-  niftiImage,
+  callbackUI,
+  callbackImg,
   isFinalImage = true
 ) {
-  console.log('Generate Brain Masking ... ')
-  // Convert all slices into 1 Dim array to download
-
-  let allOutputSlices3DCC = []
-
-  // dataSync() using to flatten array. Takes around 1.5 s
-  for (let sliceTensorIdx = 0; sliceTensorIdx < unstackOutVolumeTensor.length; sliceTensorIdx++) {
-    allOutputSlices3DCC[sliceTensorIdx] = Array.from(unstackOutVolumeTensor[sliceTensorIdx].dataSync())
+  if (unstackOutVolumeTensor[0].dtype !== 'int32') {
+    callbackUI('', -1, 'generateBrainMask assumes int32')
   }
-  const isPreModelPostProcessEnable = modelEntry.preModelPostProcess
-  // let isPreModelPostProcessEnable = inferenceModelsList[$$("selectModel").getValue() - 1]["preModelPostProcess"]
-
-  if (isPreModelPostProcessEnable) {
-    console.log('Phase-1 Post processing enabled ... ')
-    allOutputSlices3DCC = tf.tidy(() => {
-      // Remove noisy regions using 3d CC
-      // const sliceWidth = niftiHeader.dims[1]
-      // const sliceHeight = niftiHeader.dims[2]
-      // return postProcessSlices3D(allOutputSlices3DCC, slice_height, slice_width)
-      const errTxt = 'postProcessSlices3D() should be upgraded to BWLabeler'
-      wcallbackUI(errTxt, -1, errTxt)
-    })
-    console.log('Post processing done ')
-  } else {
-    console.log('Phase-1 Post processing disabled ... ')
+  if (modelEntry.preModelPostProcess) {
+    callbackUI('', -1, 'generateBrainMask assumes BWLabeler instead of preModelPostProcess')
   }
-  // Use this conversion to download output slices as nii file. Takes around 30 ms
-  // does not use `push` to avoid stack overflows. In future: consider .set() with typed arrays
-  const allOutputSlices3DCC1DimArray = new Array(allOutputSlices3DCC[0].length * allOutputSlices3DCC.length)
-  let index = 0
-  for (let sliceIdx = 0; sliceIdx < allOutputSlices3DCC.length; sliceIdx++) {
-    for (let i = 0; i < allOutputSlices3DCC[sliceIdx].length; i++) {
-      allOutputSlices3DCC1DimArray[index++] = allOutputSlices3DCC[sliceIdx][i]
-    }
+  const numSlices = unstackOutVolumeTensor.length
+  const numPixels2D = unstackOutVolumeTensor[0].size
+  const numVox3D = numSlices * numPixels2D
+  // preallocate to reduce heap usage
+  const brainOut = new Int32Array(numVox3D)
+  let offset = 0
+  for (let i = 0; i < numSlices; i++) {
+    brainOut.set(unstackOutVolumeTensor[i].dataSync(), offset)
+    offset += numPixels2D
   }
-  let brainOut = []
-  if (opts.isBrainCropMaskBased) {
-    //  Mask-based
-    const brainMaskTensor1d = await binarizeVolumeDataTensor(tf.tensor1d(allOutputSlices3DCC1DimArray))
-    brainOut = Array.from(brainMaskTensor1d.dataSync())
-  } else {
-    //  Brain tissue
-    const allSlices = await getAllSlicesData1D(num_of_slices, niftiHeader, niftiImage)
-    brainOut = new Array(niftiHeader.dims[1] * niftiHeader.dims[2] * niftiHeader.dims[3])
-    let idx = 0
-    for (let sliceIdx = 0; sliceIdx < allOutputSlices3DCC.length; sliceIdx++) {
-      for (let pixelIdx = 0; pixelIdx < slice_height * slice_width; pixelIdx++) {
-        // Filter smaller regions original MRI data
-        if (allOutputSlices3DCC[sliceIdx][pixelIdx] === 0) {
-          allSlices[sliceIdx][pixelIdx] = 0
-        }
-        brainOut[idx++] = allSlices[sliceIdx][pixelIdx]
-      }
-    }
+  for (let i = 0; i < numVox3D; i++) {
+    brainOut[i] = brainOut[i] !== 0 ? 1 : 0
   }
   if (isFinalImage || opts.showPhase1Output) {
     // all done
-    wcallbackImg(brainOut, opts, modelEntry)
+    callbackImg(brainOut, opts, modelEntry)
+    callbackUI('Segmentation finished', 0)
   }
   return tf.tensor(brainOut, [num_of_slices, slice_height, slice_width])
 }
@@ -452,7 +407,6 @@ function processTensorInChunks(inputTensor, filterWeights, chunkSize) {
   const numSlices = Math.ceil(inChannels / chunkSize)
 
   let accumulatedResult = null
-
   for (let i = 0; i < numSlices; i++) {
     const startChannel = i * chunkSize
     const endChannel = Math.min((i + 1) * chunkSize, inChannels)
@@ -462,7 +416,6 @@ function processTensorInChunks(inputTensor, filterWeights, chunkSize) {
       // Slice the input tensor to get the current chunk
       return inputTensor.slice([0, 0, 0, 0, startChannel], [-1, -1, -1, -1, channels])
     })
-
     const filterSlice = tf.tidy(() => {
       // Slice the filter weights to match the input tensor's current chunk
       return filterWeights.slice([0, 0, 0, startChannel, 0], [-1, -1, -1, channels, -1])
@@ -582,11 +535,10 @@ class SequentialConvLayer {
 
     while (true) {
       tf.engine().startScope() // Start TensorFlow.js scope
-      console.log('=======================')
+      /* console.log('=======================')
       const memoryInfo0 = await tf.memory()
       console.log(`| Number of Tensors: ${memoryInfo0.numTensors}`)
-      console.log(`| Number of Data Buffers: ${memoryInfo0.numDataBuffers}`)
-      console.log('Channel : ', chIdx)
+      console.log(`| Number of Data Buffers: ${memoryInfo0.numDataBuffers}`) */
 
       const result = await tf.tidy(() => {
         const filterWeights = weights.slice([0, 0, 0, 0, chIdx], [-1, -1, -1, -1, 1])
@@ -606,8 +558,8 @@ class SequentialConvLayer {
         return [newoutC, newoutB]
       })
       console.log('=======================')
+      callbackUI(`Iteration ${chIdx}`, chIdx / self.outChannels)
       const memoryInfo = await tf.memory()
-      wcallbackUI(`Iteration ${chIdx}`, chIdx / self.outChannels)
       console.log(`Number of Tensors: ${memoryInfo.numTensors}`)
       console.log(`Number of Data Buffers: ${memoryInfo.numDataBuffers}`)
       console.log(`Megabytes In Use: ${(memoryInfo.numBytes / 1048576).toFixed(3)} MB`)
@@ -927,7 +879,7 @@ async function inferenceFullVolumeSeqCovLayerPhase2(
         tf.dispose(curTensor[i - 1])
       } catch (err) {
         const errTxt = 'Your graphics card (e.g. Intel) may not be compatible with WebGL. ' + err.message
-        wcallbackUI(errTxt, -1, errTxt)
+        callbackUI(errTxt, -1, errTxt)
 
         tf.engine().endScope()
         tf.engine().disposeVariables()
@@ -938,7 +890,7 @@ async function inferenceFullVolumeSeqCovLayerPhase2(
         statData.Error_Type = err.message
         statData.Extra_Err_Info = 'Failed while model layer ' + i + ' apply'
 
-        wcallbackUI('', -1, '', statData)
+        callbackUI('', -1, '', statData)
 
         return 0
       }
@@ -949,10 +901,10 @@ async function inferenceFullVolumeSeqCovLayerPhase2(
       res.layers[i].dispose()
       curTensor[i - 1].dispose()
 
-      wcallbackUI('Layer ' + i.toString(), (i + 1) / layersLength)
+      callbackUI('Layer ' + i.toString(), (i + 1) / layersLength)
       if (tf.memory().unreliable) {
         const unreliableReasons = 'unreliable reasons :' + tf.memory().reasons
-        wcallbackUI(unreliableReasons, NaN, unreliableReasons)
+        callbackUI(unreliableReasons, NaN, unreliableReasons)
       }
       if (i === layersLength - 2) {
         // Stop before the last layer or classification layer.
@@ -986,7 +938,7 @@ async function inferenceFullVolumeSeqCovLayerPhase2(
 
         if (outputTensor.shape.length !== 3) {
           const msg = 'Output tensor shape should be 3 dims but it is ' + outputTensor.shape.length
-          wcallbackUI(msg, -1, msg)
+          callbackUI(msg, -1, msg)
         }
 
         const Inference_t = ((performance.now() - startTime) / 1000).toFixed(4)
@@ -1004,10 +956,10 @@ async function inferenceFullVolumeSeqCovLayerPhase2(
         statData.NumLabels_Match = numSegClasses === expected_Num_labels
         if (numSegClasses !== expected_Num_labels) {
           const msg = 'expected ' + expected_Num_labels + ' labels, but the predicted are ' + numSegClasses
-          wcallbackUI(msg, -1, msg)
+          callbackUI(msg, -1, msg)
         }
 
-        // -- Transpose back to fit Papaya display settings
+        // -- Transpose back to original unpadded size
         let outLabelVolume = outputTensor.reshape([
           cropped_slices_3d_w_pad.shape[0],
           cropped_slices_3d_w_pad.shape[1],
@@ -1072,7 +1024,7 @@ async function inferenceFullVolumeSeqCovLayerPhase2(
           tf.engine().disposeVariables()
           console.log('Error while generating output: ', error)
           const msg = 'Failed while generating output due to limited browser memory available'
-          wcallbackUI(msg, -1, msg)
+          callbackUI(msg, -1, msg)
 
           statData.Inference_t = Inference_t
           statData.Postprocess_t = Infinity
@@ -1080,7 +1032,7 @@ async function inferenceFullVolumeSeqCovLayerPhase2(
           statData.Error_Type = error.message
           statData.Extra_Err_Info = 'Failed while generating output'
 
-          wcallbackUI('', -1, '', statData)
+          callbackUI('', -1, '', statData)
 
           return 0
         }
@@ -1096,26 +1048,25 @@ async function inferenceFullVolumeSeqCovLayerPhase2(
         statData.Postprocess_t = Postprocess_t
         statData.Status = 'OK'
 
-        wcallbackUI('', -1, '', statData)
-        wcallbackUI('Segmentation finished', 0)
-        wcallbackImg(outimg, opts, modelEntry)
+        callbackUI('', -1, '', statData)
+        callbackUI('Segmentation finished', 0)
+        callbackImg(outimg, opts, modelEntry)
         return 0
       } else {
         i++
       }
     }
   } catch (err) {
-    wcallbackUI(err.message, -1, err.message)
+    callbackUI(err.message, -1, err.message)
     console.log(
       'If webgl context is lost, try to restore webgl context by visit the link ' +
         '<a href="https://support.biodigital.com/hc/en-us/articles/218322977-How-to-turn-on-WebGL-in-my-browser">here</a>'
     )
     if (tf.memory().unreliable) {
       const unreliableReasons = 'unreliable reasons :' + tf.memory().reasons
-      wcallbackUI(unreliableReasons, NaN, unreliableReasons)
+      callbackUI(unreliableReasons, NaN, unreliableReasons)
     }
   }
-  // })
 }
 
 async function inferenceFullVolumePhase2(
@@ -1321,7 +1272,7 @@ async function inferenceFullVolumePhase2(
         // -- curTensor[i] = res.layers[i].apply( curTensor[i-1])
         curTensor[i] = res.layers[i].apply(curTensor[i - 1])
       } catch (err) {
-        wcallbackUI(err.message, -1, err.message)
+        callbackUI(err.message, -1, err.message)
         tf.engine().endScope()
         tf.engine().disposeVariables()
 
@@ -1331,18 +1282,18 @@ async function inferenceFullVolumePhase2(
         statData.Error_Type = err.message
         statData.Extra_Err_Info = 'Failed while model layer ' + i + ' apply'
 
-        wcallbackUI('', -1, '', statData)
+        callbackUI('', -1, '', statData)
 
         return 0
       }
-      wcallbackUI('Layer ' + i.toString(), (i + 1) / layersLength)
+      callbackUI('Layer ' + i.toString(), (i + 1) / layersLength)
       console.log('layer output Tensor shape : ', curTensor[i].shape)
       console.log('layer count params ', res.layers[i].countParams())
       res.layers[i].dispose()
       curTensor[i - 1].dispose()
       if (tf.memory().unreliable) {
         const unreliableReasons = 'unreliable reasons :' + tf.memory().reasons
-        wcallbackUI(unreliableReasons, NaN, unreliableReasons)
+        callbackUI(unreliableReasons, NaN, unreliableReasons)
       }
 
       if (i === layersLength - 1) {
@@ -1395,7 +1346,7 @@ async function inferenceFullVolumePhase2(
               )
             } catch (err2) {
               const errTxt = "argMax buffer couldn't be created due to limited memory resources."
-              wcallbackUI(errTxt, -1, errTxt)
+              callbackUI(errTxt, -1, errTxt)
 
               tf.engine().endScope()
               tf.engine().disposeVariables()
@@ -1406,13 +1357,13 @@ async function inferenceFullVolumePhase2(
               statData.Error_Type = err2.message
               statData.Extra_Err_Info = 'prediction_argmax from argMaxLarge failed'
 
-              wcallbackUI('', -1, '', statData)
+              callbackUI('', -1, '', statData)
               return 0
             }
           } else {
             // if channel first ..
             const errTxt = "argMax buffer couldn't be created due to limited memory resources."
-            wcallbackUI(errTxt, -1, errTxt)
+            callbackUI(errTxt, -1, errTxt)
 
             prediction_argmax.dispose()
 
@@ -1425,7 +1376,7 @@ async function inferenceFullVolumePhase2(
             statData.Error_Type = err1.message
             statData.Extra_Err_Info = 'prediction_argmax from argMaxLarge not support yet channel first'
 
-            wcallbackUI('', -1, '', statData)
+            callbackUI('', -1, '', statData)
 
             return 0
           }
@@ -1438,7 +1389,6 @@ async function inferenceFullVolumePhase2(
 
         // outputDataBeforArgmx = Array.from(prediction_argmax.dataSync())
         tf.dispose(curTensor[i])
-        // allPredictions.push({"id": allBatches[j].id, "coordinates": allBatches[j].coordinates, "data": Array.from(prediction_argmax.dataSync()) })
         console.log(' find array max ')
         const curBatchMaxLabel = await prediction_argmax.max().dataSync()[0]
 
@@ -1455,10 +1405,10 @@ async function inferenceFullVolumePhase2(
         if (numSegClasses !== expected_Num_labels) {
           // errTxt = "expected " + expected_Num_labels + " labels, but the predicted are " + numSegClasses + ". For possible solutions please refer to <a href='https://github.com/neuroneural/brainchop/wiki/FAQ#Q3' target='_blank'><b> FAQ </b></a>.", "alert-error"
           const errTxt = 'expected ' + expected_Num_labels + ' labels, but the predicted are ' + numSegClasses
-          wcallbackUI(errTxt, -1, errTxt)
+          callbackUI(errTxt, -1, errTxt)
         }
 
-        // -- Transpose back to fit Papaya display settings
+        // -- Transpose back to original unpadded size
         let outLabelVolume = prediction_argmax.reshape([
           cropped_slices_3d_w_pad.shape[0],
           cropped_slices_3d_w_pad.shape[1],
@@ -1520,14 +1470,14 @@ async function inferenceFullVolumePhase2(
           tf.engine().disposeVariables()
 
           const errTxt = 'Failed while generating output due to limited browser memory available'
-          wcallbackUI(errTxt, -1, errTxt)
+          callbackUI(errTxt, -1, errTxt)
           statData.Inference_t = Inference_t
           statData.Postprocess_t = Infinity
           statData.Status = 'Fail'
           statData.Error_Type = error.message
           statData.Extra_Err_Info = 'Failed while generating output'
 
-          wcallbackUI('', -1, '', statData)
+          callbackUI('', -1, '', statData)
 
           return 0
         }
@@ -1545,16 +1495,16 @@ async function inferenceFullVolumePhase2(
         statData.Inference_t = Inference_t
         statData.Postprocess_t = Postprocess_t
         statData.Status = 'OK'
-        wcallbackUI('Segmentation finished', 0)
-        wcallbackUI('', -1, '', statData)
-        wcallbackImg(outimg, opts, modelEntry)
+        callbackUI('Segmentation finished', 0)
+        callbackUI('', -1, '', statData)
+        callbackImg(outimg, opts, modelEntry)
 
         return 0
       }
       i++
     }
   } catch (err) {
-    wcallbackUI(err.message, -1, err.message)
+    callbackUI(err.message, -1, err.message)
     console.log(
       'If webgl context is lost, try to restore webgl context by visit the link ' +
         '<a href="https://support.biodigital.com/hc/en-us/articles/218322977-How-to-turn-on-WebGL-in-my-browser">here</a>'
@@ -1622,7 +1572,7 @@ async function inferenceFullVolumePhase1(
       // -- Verify input shape
       if (preModelBatchInputShape.length !== 5) {
         const errTxt = 'The pre-model input shape must be 5D '
-        wcallbackUI(errTxt, -1, errTxt)
+        callbackUI(errTxt, -1, errTxt)
         return 0
       }
 
@@ -1635,7 +1585,7 @@ async function inferenceFullVolumePhase1(
         console.log('Pre-Model Channel Last')
         if (isNaN(preModelBatchInputShape[4]) || preModelBatchInputShape[4] !== 1) {
           const errTxt = 'The number of channels for pre-model input shape must be 1'
-          wcallbackUI(errTxt, -1, errTxt)
+          callbackUI(errTxt, -1, errTxt)
           return 0
         }
 
@@ -1648,7 +1598,7 @@ async function inferenceFullVolumePhase1(
         console.log('Pre-Model Channel First')
         if (isNaN(preModelBatchInputShape[1]) || preModelBatchInputShape[1] !== 1) {
           const errTxt = 'The number of channels for pre-model input shape must be 1'
-          wcallbackUI(errTxt, -1, errTxt)
+          callbackUI(errTxt, -1, errTxt)
           return 0
         }
 
@@ -1682,7 +1632,7 @@ async function inferenceFullVolumePhase1(
           curTensor[i] = res.layers[i].apply(curTensor[i - 1])
         } catch (err) {
           const errTxt = 'Your graphics card (e.g. Intel) may not be compatible with WebGL. ' + err.message
-          wcallbackUI(errTxt, -1, errTxt)
+          callbackUI(errTxt, -1, errTxt)
 
           tf.engine().endScope()
           tf.engine().disposeVariables()
@@ -1693,7 +1643,7 @@ async function inferenceFullVolumePhase1(
           statData.Error_Type = err.message
           statData.Extra_Err_Info = 'PreModel Failed while model layer ' + i + ' apply'
 
-          wcallbackUI('', -1, '', statData)
+          callbackUI('', -1, '', statData)
 
           return 0
         }
@@ -1701,10 +1651,10 @@ async function inferenceFullVolumePhase1(
         res.layers[i].dispose()
         curTensor[i - 1].dispose()
 
-        wcallbackUI('Layer ' + i.toString(), (i + 1) / layersLength)
+        callbackUI('Layer ' + i.toString(), (i + 1) / layersLength)
         if (tf.memory().unreliable) {
           const unreliableReasons = 'unreliable reasons :' + tf.memory().reasons
-          wcallbackUI(unreliableReasons, NaN, unreliableReasons)
+          callbackUI(unreliableReasons, NaN, unreliableReasons)
         }
 
         if (i === layersLength - 1) {
@@ -1748,7 +1698,7 @@ async function inferenceFullVolumePhase1(
                 )
               } catch (err2) {
                 const errTxt = "argMax buffer couldn't be created due to limited memory resources."
-                wcallbackUI(errTxt, -1, errTxt)
+                callbackUI(errTxt, -1, errTxt)
 
                 prediction_argmax.dispose()
 
@@ -1761,14 +1711,14 @@ async function inferenceFullVolumePhase1(
                 statData.Error_Type = err2.message
                 statData.Extra_Err_Info = 'preModel prediction_argmax from argMaxLarge failed'
 
-                wcallbackUI('', -1, '', statData)
+                callbackUI('', -1, '', statData)
 
                 return 0
               }
             } else {
               // if channel first ..
               const errTxt = "argMax buffer couldn't be created due to limited memory resources."
-              wcallbackUI(errTxt, -1, errTxt)
+              callbackUI(errTxt, -1, errTxt)
 
               prediction_argmax.dispose()
 
@@ -1781,7 +1731,7 @@ async function inferenceFullVolumePhase1(
               statData.Error_Type = err1.message
               statData.Extra_Err_Info = 'preModel prediction_argmax from argMaxLarge not support yet channel first'
 
-              wcallbackUI('', -1, '', statData)
+              callbackUI('', -1, '', statData)
 
               return 0
             }
@@ -1808,7 +1758,7 @@ async function inferenceFullVolumePhase1(
           statData.Expect_Labels = expected_Num_labels
           statData.NumLabels_Match = numSegClasses === expected_Num_labels
 
-          // -- Transpose back to fit Papaya display settings
+          // -- Transpose back to original unpadded size
           let outLabelVolume = await prediction_argmax.reshape([num_of_slices, slice_height, slice_width])
           tf.dispose(prediction_argmax)
           // Transpose MRI data to be match pytorch/keras input output
@@ -1841,7 +1791,7 @@ async function inferenceFullVolumePhase1(
             tf.engine().disposeVariables()
 
             const errTxt = 'Failed while generating pre-model output due to limited browser memory available'
-            wcallbackUI(errTxt, -1, errTxt)
+            callbackUI(errTxt, -1, errTxt)
 
             statData.Inference_t = Inference_t
             statData.Postprocess_t = Infinity
@@ -1849,7 +1799,7 @@ async function inferenceFullVolumePhase1(
             statData.Error_Type = error.message
             statData.Extra_Err_Info = 'Pre-model failed while generating output'
 
-            wcallbackUI('', -1, '', statData)
+            callbackUI('', -1, '', statData)
 
             return 0
           }
@@ -1864,11 +1814,11 @@ async function inferenceFullVolumePhase1(
           statData.Postprocess_t = Postprocess_t
           statData.Status = 'OK'
 
-          wcallbackUI('', -1, '', statData)
+          callbackUI('', -1, '', statData)
 
           if (slices_3d_mask == null) {
             const msg = 'slice_3d_mask failed ...'
-            wcallbackUI(msg, -1, msg)
+            callbackUI(msg, -1, msg)
             return 0
           } else {
             // --Phase-2, After remove the skull try to allocate brain volume and make inferece
@@ -1923,7 +1873,7 @@ async function inferenceFullVolumePhase1(
         i++
       }
     } catch (err) {
-      wcallbackUI(err.message, -1, err.message)
+      callbackUI(err.message, -1, err.message)
       console.log(
         'If webgl context is lost, try to restore webgl context by visit the link ' +
           '<a href="https://support.biodigital.com/hc/en-us/articles/218322977-How-to-turn-on-WebGL-in-my-browser">here</a>'
@@ -2008,17 +1958,17 @@ async function enableProductionMode(textureF16Flag = true) {
 async function runInferenceWW(opts, modelEntry, niftiHeader, niftiImage) {
   const statData = []
   statData.startTime = Date.now() // for common webworker/mainthread do not use performance.now()
-  wcallbackUI('Segmentation started', 0)
+  callbackUI('Segmentation started', 0)
   const batchSize = opts.batchSize
   const numOfChan = opts.numOfChan
   if (isNaN(batchSize) || batchSize !== 1) {
     const errTxt = 'The batch Size for input shape must be 1'
-    wcallbackUI(errTxt, -1, errTxt)
+    callbackUI(errTxt, -1, errTxt)
     return 0
   }
   if (isNaN(numOfChan) || numOfChan !== 1) {
     const errTxt = 'The number of channels for input shape must be 1'
-    wcallbackUI(errTxt, -1, errTxt)
+    callbackUI(errTxt, -1, errTxt)
     return 0
   }
   tf.engine().startScope()
@@ -2038,7 +1988,7 @@ async function runInferenceWW(opts, modelEntry, niftiHeader, niftiImage) {
   // -- Verify input shape
   if (batchInputShape.length !== 5) {
     const errTxt = 'The model input shape must be 5D'
-    wcallbackUI(errTxt, -1, errTxt)
+    callbackUI(errTxt, -1, errTxt)
     return 0
   }
   let batch_D, batch_H, batch_W
@@ -2051,7 +2001,7 @@ async function runInferenceWW(opts, modelEntry, niftiHeader, niftiImage) {
     console.log('Model Channel Last')
     if (isNaN(batchInputShape[4]) || batchInputShape[4] !== 1) {
       const errTxt = 'The number of channels for input shape must be 1'
-      wcallbackUI(errTxt, -1, errTxt)
+      callbackUI(errTxt, -1, errTxt)
       return 0
     }
     batch_D = batchInputShape[1]
@@ -2063,7 +2013,7 @@ async function runInferenceWW(opts, modelEntry, niftiHeader, niftiImage) {
     console.log('Model Channel First')
     if (isNaN(batchInputShape[1]) || batchInputShape[1] !== 1) {
       const errTxt = 'The number of channels for input shape must be 1'
-      wcallbackUI(errTxt, -1, errTxt)
+      callbackUI(errTxt, -1, errTxt)
       return 0
     }
     batch_D = batchInputShape[2]
@@ -2080,14 +2030,7 @@ async function runInferenceWW(opts, modelEntry, niftiHeader, niftiImage) {
   }
   statData.isModelFullVol = isModelFullVol
   // Model output number of segmentations
-  let allSlices = await getAllSlicesData1D(num_of_slices, niftiHeader, niftiImage)
-  const allSlices_2D = await getAllSlices2D(allSlices, slice_height, slice_width)
-  // free array from mem
-  allSlices = null
-  // Get slices_3d tensor
-  let slices_3d = await getSlices3D(allSlices_2D)
-  // free tensor from mem
-  tf.dispose(allSlices_2D)
+  let slices_3d = await getAllSlicesDataAsTF3D(num_of_slices, niftiHeader, niftiImage)
   const transpose = modelEntry.enableTranspose
   const enableCrop = modelEntry.enableCrop
   if (isModelFullVol) {

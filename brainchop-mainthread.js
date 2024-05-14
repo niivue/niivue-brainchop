@@ -28,19 +28,7 @@ async function load_model(modelUrl) {
   return await tf.loadLayersModel(modelUrl)
 }
 
-async function getAllSlices2D(allSlices, slice_height, slice_width) {
-  const allSlices_2D = []
-  for (let sliceIdx = 0; sliceIdx < allSlices.length; sliceIdx++) {
-    allSlices_2D.push(tf.tensor(allSlices[sliceIdx], [slice_height, slice_width]))
-  }
-  return allSlices_2D
-}
-
-async function getSlices3D(allSlices_2D) {
-  return tf.stack(allSlices_2D)
-}
-
-async function getAllSlicesData1D(num_of_slices, niftiHeader, niftiImage) {
+async function getAllSlicesDataAsTF3D(num_of_slices, niftiHeader, niftiImage) {
   // Get nifti dimensions
   const cols = niftiHeader.dims[1] // Slice width
   const rows = niftiHeader.dims[2] // Slice height
@@ -72,7 +60,7 @@ async function getAllSlicesData1D(num_of_slices, niftiHeader, niftiImage) {
   } else {
     return
   }
-  const allSlices = []
+  const allSlices_2D = []
   let offset3D = 0
   // Draw pixels
   for (let slice = 0; slice < num_of_slices; slice++) {
@@ -85,9 +73,11 @@ async function getAllSlicesData1D(num_of_slices, niftiHeader, niftiImage) {
         slice[offset2D++] = value & 0xff
       }
     }
-    allSlices.push(slice)
+    allSlices_2D.push(tf.tensor(slice, [rows, cols])) // slice_height, slice_width
   }
-  return allSlices
+  const allSlices_3D = tf.stack(allSlices_2D)
+  tf.dispose(allSlices_2D)
+  return allSlices_3D
 }
 
 async function calculateQuantiles(tensor, lowerQuantile = 0.01, upperQuantile = 0.99) {
@@ -269,6 +259,7 @@ async function binarizeVolumeDataTensor(volumeDataTensor) {
   // element-wise: (x > 0 ? 1 : alpha * x );  e.g. Tenosr [0, 0.9, 0.8, -3] => Tensor [0, 1, 1, 0]
   return volumeDataTensor.step(alpha)
 }
+
 async function generateBrainMask(
   unstackOutVolumeTensor,
   num_of_slices,
@@ -280,52 +271,24 @@ async function generateBrainMask(
   callbackImg,
   isFinalImage = true
 ) {
-  console.log('Generate Brain Masking ... ')
-  // Convert all slices into 1 Dim array to download
-
-  let allOutputSlices3DCC = []
-  // const allOutputSlices3DContours = []
-
-  // dataSync() using to flatten array. Takes around 1.5 s
-  for (let sliceTensorIdx = 0; sliceTensorIdx < unstackOutVolumeTensor.length; sliceTensorIdx++) {
-    allOutputSlices3DCC[sliceTensorIdx] = Array.from(unstackOutVolumeTensor[sliceTensorIdx].dataSync())
+  if (unstackOutVolumeTensor[0].dtype !== 'int32') {
+    callbackUI('', -1, 'generateBrainMask assumes int32')
   }
-  const isPreModelPostProcessEnable = modelEntry.preModelPostProcess
-  // let isPreModelPostProcessEnable = inferenceModelsList[$$("selectModel").getValue() - 1]["preModelPostProcess"];
-
-  if (isPreModelPostProcessEnable) {
-    console.log('Phase-1 Post processing enabled ... ')
-    allOutputSlices3DCC = tf.tidy(() => {
-      // Remove noisy regions using 3d CC
-      // const sliceWidth = niftiHeader.dims[1]
-      // const sliceHeight = niftiHeader.dims[2]
-      // return postProcessSlices3D(allOutputSlices3DCC, slice_height, slice_width)
-      const errTxt = 'postProcessSlices3D() should be upgraded to BWLabeler'
-      callbackUI(errTxt, -1, errTxt)
-    })
-    console.log('Post processing done ')
-  } else {
-    console.log('Phase-1 Post processing disabled ... ')
+  if (modelEntry.preModelPostProcess) {
+    callbackUI('', -1, 'generateBrainMask assumes BWLabeler instead of preModelPostProcess')
   }
-  // Use this conversion to download output slices as nii file. Takes around 30 ms
-  // does not use `push` to avoid stack overflows. In future: consider .set() with typed arrays
-  const allOutputSlices3DCC1DimArray = new Array(allOutputSlices3DCC[0].length * allOutputSlices3DCC.length)
-  let index = 0
-  for (let sliceIdx = 0; sliceIdx < allOutputSlices3DCC.length; sliceIdx++) {
-    for (let i = 0; i < allOutputSlices3DCC[sliceIdx].length; i++) {
-      allOutputSlices3DCC1DimArray[index++] = allOutputSlices3DCC[sliceIdx][i]
-    }
+  const numSlices = unstackOutVolumeTensor.length
+  const numPixels2D = unstackOutVolumeTensor[0].size
+  const numVox3D = numSlices * numPixels2D
+  // preallocate to reduce heap usage
+  const brainOut = new Int32Array(numVox3D)
+  let offset = 0
+  for (let i = 0; i < numSlices; i++) {
+    brainOut.set(unstackOutVolumeTensor[i].dataSync(), offset)
+    offset += numPixels2D
   }
-  let brainOut = []
-
-  if (opts.isBrainCropMaskBased) {
-    //  Mask-based
-
-    const brainMaskTensor1d = await binarizeVolumeDataTensor(tf.tensor1d(allOutputSlices3DCC1DimArray))
-    brainOut = Array.from(brainMaskTensor1d.dataSync())
-  } else {
-    //  Brain tissue
-    window.alert('getAllSlicesData1D() is not dead code? niftiHeader and niftiImage required by getAllSlicesData1D')
+  for (let i = 0; i < numVox3D; i++) {
+    brainOut[i] = brainOut[i] !== 0 ? 1 : 0
   }
   if (isFinalImage || opts.showPhase1Output) {
     // all done
@@ -537,11 +500,10 @@ class SequentialConvLayer {
 
       const seqTimer = window.setInterval(async function () {
         tf.engine().startScope() // Start TensorFlow.js scope
-        console.log('=======================')
+        /* console.log('=======================')
         const memoryInfo0 = await tf.memory()
         console.log(`| Number of Tensors: ${memoryInfo0.numTensors}`)
-        console.log(`| Number of Data Buffers: ${memoryInfo0.numDataBuffers}`)
-        console.log('Channel : ', chIdx)
+        console.log(`| Number of Data Buffers: ${memoryInfo0.numDataBuffers}`) */
 
         const result = await tf.tidy(() => {
           const filterWeights = weights.slice([0, 0, 0, 0, chIdx], [-1, -1, -1, -1, 1])
@@ -564,11 +526,10 @@ class SequentialConvLayer {
         })
 
         console.log('=======================')
-        const memoryInfo = await tf.memory()
         self.callbackUI(`Iteration ${chIdx}`, chIdx / self.outChannels)
+        const memoryInfo = await tf.memory()
         console.log(`Number of Tensors: ${memoryInfo.numTensors}`)
         console.log(`Number of Data Buffers: ${memoryInfo.numDataBuffers}`)
-
         console.log(`Megabytes In Use: ${(memoryInfo.numBytes / 1048576).toFixed(3)} MB`)
         if (memoryInfo.unreliable) {
           console.log(`Unreliable: ${memoryInfo.unreliable}`)
@@ -949,7 +910,6 @@ async function inferenceFullVolumeSeqCovLayerPhase2(
       res.layers[i].dispose()
       curTensor[i - 1].dispose()
 
-      // bork
       callbackUI('Layer ' + i.toString(), (i + 1) / layersLength)
       if (tf.memory().unreliable) {
         const unreliableReasons = 'unreliable reasons :' + tf.memory().reasons
@@ -959,17 +919,15 @@ async function inferenceFullVolumeSeqCovLayerPhase2(
         // Stop before the last layer or classification layer.
 
         window.clearInterval(timer)
-
         // // Create an instance of SequentialConvLayer
         // The second parameter is important for memory,
         // the larger it is, the more memory it uses
         // it was 8, but I set it to 3, got a different error
         // let seqConvLayer = new SequentialConvLayer(res, 10, isChannelLast);
         const seqConvLayer = await new SequentialConvLayer(res, 10, isChannelLast, callbackUI)
-
         // Apply the last output tensor to the seq. instance
         const outputTensor = await seqConvLayer.apply(curTensor[i])
-
+        callbackUI('seqConvLayer Done')
         // -- document.getElementById("progressBarChild").style.width = 0 + "%";;
 
         // Dispose the previous layer input tensor
@@ -1005,7 +963,7 @@ async function inferenceFullVolumeSeqCovLayerPhase2(
           callbackUI(msg, -1, msg)
         }
 
-        // -- Transpose back to fit Papaya display settings
+        // -- Transpose back to original unpadded size
         let outLabelVolume = outputTensor.reshape([
           cropped_slices_3d_w_pad.shape[0],
           cropped_slices_3d_w_pad.shape[1],
@@ -1456,7 +1414,7 @@ async function inferenceFullVolumePhase2(
           callbackUI(errTxt, -1, errTxt)
         }
 
-        // -- Transpose back to fit Papaya display settings
+        // -- Transpose back to original unpadded size
         let outLabelVolume = prediction_argmax.reshape([
           cropped_slices_3d_w_pad.shape[0],
           cropped_slices_3d_w_pad.shape[1],
@@ -1683,7 +1641,7 @@ async function inferenceFullVolumePhase1(
 
       const timer = window.setInterval(async function () {
         try {
-          curTensor[i] = res.layers[i].apply(curTensor[i - 1])
+          curTensor[i] = await res.layers[i].apply(curTensor[i - 1])
         } catch (err) {
           const errTxt = 'Your graphics card (e.g. Intel) may not be compatible with WebGL. ' + err.message
           callbackUI(errTxt, -1, errTxt)
@@ -1795,7 +1753,6 @@ async function inferenceFullVolumePhase1(
               return 0
             }
           }
-
           console.log(' Pre-model prediction_argmax shape : ', prediction_argmax.shape)
           // -- prediction_argmax.shape  : [ 1, 256, 256, 256]
 
@@ -1816,7 +1773,7 @@ async function inferenceFullVolumePhase1(
           statData.Expect_Labels = expected_Num_labels
           statData.NumLabels_Match = numSegClasses === expected_Num_labels
 
-          // -- Transpose back to fit Papaya display settings
+          // -- Transpose back to original unpadded size
           let outLabelVolume = await prediction_argmax.reshape([num_of_slices, slice_height, slice_width])
           tf.dispose(prediction_argmax)
           // Transpose MRI data to be match pytorch/keras input output
@@ -2044,6 +2001,7 @@ async function runInference(opts, modelEntry, niftiHeader, niftiImage, callbackI
   const model = await load_model(opts.rootURL + modelEntry.path)
   await enableProductionMode(true)
   statData.TF_Backend = tf.getBackend()
+  callbackUI('Segmentation mork', 0)
   const modelObject = model
   let batchInputShape = []
   // free global variable of 16777216 voxel
@@ -2103,14 +2061,7 @@ async function runInference(opts, modelEntry, niftiHeader, niftiImage, callbackI
   }
   statData.isModelFullVol = isModelFullVol
   // Model output number of segmentations
-  let allSlices = await getAllSlicesData1D(num_of_slices, niftiHeader, niftiImage)
-  const allSlices_2D = await getAllSlices2D(allSlices, slice_height, slice_width)
-  // free array from mem
-  allSlices = null
-  // Get slices_3d tensor
-  let slices_3d = await getSlices3D(allSlices_2D)
-  // free tensor from mem
-  tf.dispose(allSlices_2D)
+  let slices_3d = await getAllSlicesDataAsTF3D(num_of_slices, niftiHeader, niftiImage)
   const transpose = modelEntry.enableTranspose
   const enableCrop = modelEntry.enableCrop
   if (isModelFullVol) {
