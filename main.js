@@ -133,8 +133,11 @@ async function main() {
       runInference(opts, model, nv1.volumes[0].hdr, nv1.volumes[0].img, callbackImg, callbackUI)
     }
   }
-  saveBtn.onclick = function () {
+  saveImgBtn.onclick = function () {
     nv1.volumes[1].saveToDisk('Custom.nii')
+  }
+  saveSceneBtn.onclick = function () {
+    nv1.saveDocument("brainchop.nvd");
   }
   workerCheck.onchange = function () {
     modelSelect.onchange()
