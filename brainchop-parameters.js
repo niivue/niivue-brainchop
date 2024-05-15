@@ -27,8 +27,6 @@ const inferenceModelsList = [
     type: 'Segmentation',
     path: '/models/model5_gw_ae/model.json',
     modelName: '\u26A1 Tissue GWM (light)',
-    labelsPath: './models/model5_gw_ae/labels.json',
-    colorsPath: './models/model5_gw_ae/colorLUT.json',
     colormapPath: './models/model5_gw_ae/colormap3.json',
     preModelId: null, // Model run first e.g.  crop the brain   { null, 1, 2, ..  }
     preModelPostProcess: false, // If true, perform postprocessing to remove noisy regions after preModel inference generate output.
@@ -52,8 +50,6 @@ const inferenceModelsList = [
     type: 'Segmentation',
     path: '/models/model20chan3cls/model.json',
     modelName: '\u{1F52A} Tissue GWM (High Acc)',
-    labelsPath: './models/model20chan3cls/labels.json',
-    colorsPath: './models/model20chan3cls/colorLUT.json',
     colormapPath: './models/model20chan3cls/colormap.json',
     preModelId: null, // Model run first e.g.  crop the brain   { null, 1, 2, ..  }
     preModelPostProcess: false, // If true, perform postprocessing to remove noisy regions after preModel inference generate output.
@@ -78,8 +74,6 @@ const inferenceModelsList = [
     type: 'Segmentation',
     path: '/models/model20chan3cls/model.json',
     modelName: '\u{1F52A} Tissue GWM (High Acc, Low Mem)',
-    labelsPath: './models/model20chan3cls/labels.json',
-    colorsPath: './models/model20chan3cls/colorLUT.json',
     colormapPath: './models/model20chan3cls/colormap.json',
     preModelId: null, // Model run first e.g.  crop the brain   { null, 1, 2, ..  }
     preModelPostProcess: false, // If true, perform postprocessing to remove noisy regions after preModel inference generate output.
@@ -104,8 +98,6 @@ const inferenceModelsList = [
     type: 'Atlas',
     path: '/models/model30chan18cls/model.json',
     modelName: '\u{1FA93} Subcortical + GWM (High Mem, Fast)',
-    labelsPath: './models/model30chan18cls/labels.json',
-    colorsPath: './models/model30chan18cls/colorLUT.json',
     colormapPath: './models/model30chan18cls/colormap.json',
     preModelId: null, // Model run first e.g.  crop the brain  { null, 1, 2, ..  }
     preModelPostProcess: false, // If true, perform postprocessing to remove noisy regions after preModel inference generate output.
@@ -130,8 +122,6 @@ const inferenceModelsList = [
     type: 'Atlas',
     path: '/models/model30chan18cls/model.json',
     modelName: '\u{1FA93} Subcortical + GWM (Low Mem, Slow)',
-    labelsPath: './models/model30chan18cls/labels.json',
-    colorsPath: './models/model30chan18cls/colorLUT.json',
     colormapPath: './models/model30chan18cls/colormap.json',
     preModelId: null, // Model run first e.g.  crop the brain  { null, 1, 2, ..  }
     preModelPostProcess: false, // If true, perform postprocessing to remove noisy regions after preModel inference generate output.
@@ -156,8 +146,6 @@ const inferenceModelsList = [
     type: 'Atlas',
     path: '/models/model18cls/model.json',
     modelName: '\u{1FA93} Subcortical + GWM (Low Mem, Faster)',
-    labelsPath: './models/model18cls/labels.json',
-    colorsPath: './models/model18cls/colorLUT.json',
     colormapPath: './models/model18cls/colormap.json',
     preModelId: null, // model run first e.g.  Brain_Extraction  { null, 1, 2, ..  }
     preModelPostProcess: false, // If true, perform postprocessing to remove noisy regions after preModel inference generate output.
@@ -182,8 +170,6 @@ const inferenceModelsList = [
     type: 'Atlas',
     path: '/models/model30chan18cls/model.json',
     modelName: '\u{1F52A}\u{1FA93} Subcortical + GWM (Failsafe, Less Acc)',
-    labelsPath: './models/model30chan18cls/labels.json',
-    colorsPath: './models/model30chan18cls/colorLUT.json',
     colormapPath: './models/model30chan18cls/colormap.json',
     preModelId: 1, // model run first e.g.  Brain_Extraction  { null, 1, 2, ..  }
     preModelPostProcess: false, // If true, perform postprocessing to remove noisy regions after preModel inference generate output.
@@ -208,8 +194,6 @@ const inferenceModelsList = [
     type: 'Atlas',
     path: '/models/model30chan50cls/model.json',
     modelName: '\u{1F52A} Aparc+Aseg 50 (High Mem, Fast)',
-    labelsPath: './models/model30chan50cls/labels.json',
-    colorsPath: './models/model30chan50cls/colorLUT.json',
     colormapPath: './models/model30chan50cls/colormap.json',
     preModelId: 1, // Model run first e.g.  crop the brain  { null, 1, 2, ..  }
     preModelPostProcess: false, // If true, perform postprocessing to remove noisy regions after preModel inference generate output.
@@ -234,8 +218,6 @@ const inferenceModelsList = [
     type: 'Atlas',
     path: '/models/model30chan50cls/model.json',
     modelName: '\u{1F52A} Aparc+Aseg 50 (Low Mem, Slow)',
-    labelsPath: './models/model30chan50cls/labels.json',
-    colorsPath: './models/model30chan50cls/colorLUT.json',
     colormapPath: './models/model30chan50cls/colormap.json',
     preModelId: 1, // Model run first e.g.  crop the brain  { null, 1, 2, ..  }
     preModelPostProcess: false, // If true, perform postprocessing to remove noisy regions after preModel inference generate output.
@@ -261,8 +243,6 @@ const inferenceModelsList = [
     type: 'Brain_Extraction',
     path: '/models/model5_gw_ae/model.json',
     modelName: '\u26A1 Extract the Brain (FAST)',
-    labelsPath: null,
-    colorsPath: null,
     preModelId: null, // Model run first e.g.  crop the brain  { null, 1, 2, ..  }
     preModelPostProcess: false, // If true, perform postprocessing to remove noisy regions after preModel inference generate output.
     isBatchOverlapEnable: false, // create extra overlap batches for inference
@@ -285,8 +265,6 @@ const inferenceModelsList = [
     type: 'Brain_Extraction',
     path: '/models/model11_gw_ae/model.json',
     modelName: '\u{1F52A} Extract the Brain (High Acc, Slow)',
-    labelsPath: null,
-    colorsPath: null,
     preModelId: null, // Model run first e.g.  crop the brain  { null, 1, 2, ..  }
     preModelPostProcess: false, // If true, perform postprocessing to remove noisy regions after preModel inference generate output.
     isBatchOverlapEnable: false, // create extra overlap batches for inference
@@ -310,8 +288,6 @@ const inferenceModelsList = [
     type: 'Brain_Masking',
     path: '/models/model5_gw_ae/model.json',
     modelName: '\u26A1 Brain Mask (FAST)',
-    labelsPath: null,
-    colorsPath: null,
     colormapPath: './models/model5_gw_ae/colormap.json',
     preModelId: null, // Model run first e.g.  crop the brain  { null, 1, 2, ..  }
     preModelPostProcess: false, // If true, perform postprocessing to remove noisy regions after preModel inference generate output.
@@ -335,8 +311,6 @@ const inferenceModelsList = [
     type: 'Brain_Masking',
     path: '/models/model11_gw_ae/model.json',
     modelName: '\u{1F52A} Brain Mask (High Acc, Low Mem)',
-    labelsPath: null,
-    colorsPath: null,
     preModelId: null, // Model run first e.g.  crop the brain  { null, 1, 2, ..  }
     preModelPostProcess: false, // If true, perform postprocessing to remove noisy regions after preModel inference generate output.
     isBatchOverlapEnable: false, // create extra overlap batches for inference
@@ -360,10 +334,8 @@ const inferenceModelsList = [
     type: 'Atlas',
     path: '/models/model21_104class/model.json',
     modelName: '\u{1F52A} Aparc+Aseg 104 (High Mem, Fast)',
-    labelsPath: './models/model21_104class/labels.json',
-    colorsPath: './models/model21_104class/colorLUT.json',
     colormapPath: './models/model21_104class/colormap.json',
-    preModelId: 1, // model run first e.g.  Brain_Extraction  { null, 1, 2, ..  }
+    preModelId: 0, // model run first e.g.  Brain_Extraction  { null, 1, 2, ..  }
     preModelPostProcess: false, // If true, perform postprocessing to remove noisy regions after preModel inference generate output.
     isBatchOverlapEnable: false, // create extra overlap batches for inference
     numOverlapBatches: 200, // Number of extra overlap batches for inference
@@ -386,10 +358,8 @@ const inferenceModelsList = [
     type: 'Atlas',
     path: '/models/model21_104class/model.json',
     modelName: '\u{1F52A} Aparc+Aseg 104 (Low Mem, Slow)',
-    labelsPath: './models/model21_104class/labels.json',
-    colorsPath: './models/model21_104class/colorLUT.json',
     colormapPath: './models/model21_104class/colormap.json',
-    preModelId: 1, // model run first e.g.  Brain_Extraction  { null, 1, 2, ..  }
+    preModelId: 0, // model run first e.g.  Brain_Extraction  { null, 1, 2, ..  }
     preModelPostProcess: false, // If true, perform postprocessing to remove noisy regions after preModel inference generate output.
     isBatchOverlapEnable: false, // create extra overlap batches for inference
     numOverlapBatches: 200, // Number of extra overlap batches for inference
