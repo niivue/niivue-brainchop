@@ -9,7 +9,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@niivue/niivue":"^0.43.2",
+    "@niivue/niivue":"^0.43.3",
     "@tensorflow/tfjs": "^4.19.0",
     "gl-matrix": "^3.4.3"
   },
