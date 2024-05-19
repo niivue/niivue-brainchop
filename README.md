@@ -1,5 +1,7 @@
 # NiiVue brainchop
 
+<span style="color: red">**This repository is archived. Features developed here have been merged with the main [brainchop repository](https://github.com/neuroneural/brainchop)**</span>
+
 This is an experimental version of [brainchop](https://github.com/neuroneural/brainchop) that uses [NiiVue](https://github.com/niivue/niivue) to segment and visualize voxel based images. 
 
 ## Live preview
