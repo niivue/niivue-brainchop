@@ -157,6 +157,36 @@ async function main() {
     const js = await response.json()
     return js
   }
+  let classLabels = []
+  async function createClassLabels(segmentedVolume) {
+    if (nv1.volumes.length < 2) {
+      classLabels = []
+      return
+    }
+    let img = nv1.volumes[1].img
+    let sums = new Int32Array(256)
+    for (let i = 0; i < img.length; i++) {
+      sums[img[i]]++
+    }
+    let maxClass = 0
+    for (let i = 0; i < 256; i++) {
+      if (sums[i] > 0) {
+        maxClass = i
+      }
+    }
+    if (nv1.volumes[1].colormapLabel === null) {
+      return
+    }
+    let labels = nv1.volumes[1].colormapLabel.labels;
+    for (let i = 0; i <= maxClass; i++) {
+      let label = i.toString()
+      if (labels.length > i)
+        label = labels[i]
+      let str = `${label} has ${sums[i]} voxels`
+      classLabels.push(str)
+      console.log(str)
+    }
+  }
   async function callbackImg(img, opts, modelEntry) {
     closeAllOverlays()
     const overlayVolume = await nv1.volumes[0].clone()
@@ -179,6 +209,7 @@ async function main() {
     }
     overlayVolume.opacity = opacitySlider1.value / 255
     await nv1.addVolume(overlayVolume)
+    createClassLabels()
   }
   async function reportTelemetry(statData) {
     if (typeof statData === 'string' || statData instanceof String) {
@@ -218,7 +249,11 @@ async function main() {
     }
   }
   function handleLocationChange(data) {
-    document.getElementById('location').innerHTML = '&nbsp;&nbsp;' + data.string
+    let str = ''
+    if ((classLabels.length > 0) && (data.values.length > 1)) {
+      str = classLabels[data.values[1].value]
+    }
+    document.getElementById('location').innerHTML = '&nbsp;&nbsp;' + str + data.string
   }
   const defaults = {
     backColor: [0.4, 0.4, 0.4, 1],
@@ -246,8 +281,8 @@ async function main() {
   drawDrop.selectedIndex = -1
   workerCheck.checked = await isChrome() // TODO: Safari does not yet support WebGL TFJS webworkers, test FireFox
   // uncomment next two lines to automatically run segmentation when web page is loaded
-  // modelSelect.selectedIndex = 11
-  // modelSelect.onchange()
+  modelSelect.selectedIndex = 11
+  modelSelect.onchange()
 }
 
 main()
