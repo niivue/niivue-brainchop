@@ -177,6 +177,7 @@ async function main() {
     if (nv1.volumes[1].colormapLabel === null) {
       return
     }
+    classLabels = []
     let labels = nv1.volumes[1].colormapLabel.labels;
     for (let i = 0; i <= maxClass; i++) {
       let label = i.toString()
@@ -249,6 +250,7 @@ async function main() {
     }
   }
   function handleLocationChange(data) {
+    console.log(data)
     let str = ''
     if ((classLabels.length > 0) && (data.values.length > 1)) {
       str = classLabels[data.values[1].value]
