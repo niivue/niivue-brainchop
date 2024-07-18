@@ -283,8 +283,8 @@ async function main() {
   drawDrop.selectedIndex = -1
   workerCheck.checked = await isChrome() // TODO: Safari does not yet support WebGL TFJS webworkers, test FireFox
   // uncomment next two lines to automatically run segmentation when web page is loaded
-  modelSelect.selectedIndex = 11
-  modelSelect.onchange()
+  // modelSelect.selectedIndex = 11
+  // modelSelect.onchange()
 }
 
 main()
